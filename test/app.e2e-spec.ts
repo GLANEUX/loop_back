@@ -1,13 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import request from "supertest";
+import { AppModule } from "../src/app.module";
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe("HealthModule (e2e)", () => {
+  let app: INestApplication;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    process.env.NODE_ENV = "test"; // charge bien .env.test
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -16,10 +16,16 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it("/health (GET) should return status ok", async () => {
+    const res = await request(app.getHttpServer()).get("/health");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("status", "ok");
+    expect(res.body).toHaveProperty("uptime");
+    expect(res.body).toHaveProperty("timestamp");
   });
 });

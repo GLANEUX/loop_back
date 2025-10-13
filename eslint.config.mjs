@@ -1,34 +1,59 @@
-// @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import prettier from "eslint-config-prettier";
+import eslintPluginPrettier from "eslint-plugin-prettier";
+import globals from "globals";
 
-export default tseslint.config(
-  {
-    ignores: ['eslint.config.mjs'],
-  },
-  eslint.configs.recommended,
+/** @type {import('eslint').FlatConfig.ConfigArray} */
+export default [
+  { ignores: ["dist/**", "node_modules/**"] },
+  js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
   {
+    files: ["**/*.ts"],
     languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: ["./tsconfig.json"],
+        tsconfigRootDir: process.cwd(),
+      },
+      globals: {
+        ...globals.node,
+      },
+    },
+    plugins: {
+      prettier: eslintPluginPrettier,
+    },
+    rules: {
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "prettier/prettier": "warn",
+    },
+  },
+
+  {
+    files: ["**/*.spec.ts", "**/*.e2e-spec.ts", "test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+    },
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: ["./tsconfig.json", "./test/tsconfig.json"].filter(Boolean),
+        tsconfigRootDir: process.cwd(),
+      },
       globals: {
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'commonjs',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
-  },
-  {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "prettier/prettier": "warn",
     },
   },
-);
+
+  prettier,
+];
