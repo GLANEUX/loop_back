@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile
+    container_name: loop_api
+    restart: unless-stopped
+    env_file:
+      - ../../.env.production
+    depends_on:
+      - db
+    networks:
+      - vps-mds
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.loop_api.rule=Host(`back.loop-app.fr`)"
+      - "traefik.http.routers.loop_api.entrypoints=websecure"
+      - "traefik.http.routers.loop_api.tls.certresolver=myresolver"
+      - "traefik.http.services.loop_api.loadbalancer.server.port=3000"
+
+  db:
+    image: postgres:16-alpine
+    container_name: loop_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: loop_user
+      POSTGRES_PASSWORD: loop_pass
+      POSTGRES_DB: loop_prod
+    volumes:
+      - pg_data_prod:/var/lib/postgresql/data
+    networks:
+      - vps-mds
+
+networks:
+  vps-mds:
+    external: true
+
+volumes:
+  pg_data_prod:
