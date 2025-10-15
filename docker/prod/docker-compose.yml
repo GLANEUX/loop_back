@@ -16,7 +16,7 @@ services:
       - "traefik.http.routers.loop_api.rule=Host(`back.loop-app.fr`)"
       - "traefik.http.routers.loop_api.entrypoints=websecure"
       - "traefik.http.routers.loop_api.tls.certresolver=myresolver"
-      - "traefik.http.services.loop_api.loadbalancer.server.port=3000"
+      - "traefik.http.services.loop_api.loadbalancer.server.port=8080"
 
   db:
     image: postgres:16-alpine
