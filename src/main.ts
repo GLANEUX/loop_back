@@ -21,7 +21,8 @@ async function bootstrap() {
     req.requestId = uuidv4();
     next();
   });
+
   await app.listen(env.PORT);
   logger.log("info", `🚀 API running on port ${env.PORT} [${env.NODE_ENV}]`);
 }
-bootstrap();
+void bootstrap();
