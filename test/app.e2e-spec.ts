@@ -21,7 +21,8 @@ describe("HealthModule (e2e)", () => {
   });
 
   it("/health (GET) should return status ok", async () => {
-    const res = await request(app.getHttpServer()).get("/health");
+    const server = app.getHttpServer() as unknown as Parameters<typeof request>[0];
+    const res = await request(server).get("/health");
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("status", "ok");
