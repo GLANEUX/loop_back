@@ -32,6 +32,6 @@
     "removeComments": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", "src/types/**/*.d.ts"],
+  "include": ["src/**/*.ts", "src/types/**/*.d.ts", "test/app.spec.ts"],
   "exclude": ["node_modules", "dist"]
 }

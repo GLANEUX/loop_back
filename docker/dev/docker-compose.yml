@@ -1,7 +1,7 @@
 services:
   api:
     build:
-      context: ../..           # <-- revient à la racine (où se trouve package.json)
+      context: ../..
       dockerfile: docker/dev/Dockerfile
     container_name: loop_api_dev
     restart: unless-stopped
@@ -12,7 +12,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ../..:/usr/src/app     # monte le dossier racine dans le conteneur
+      - ../..:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - loop_dev_network
