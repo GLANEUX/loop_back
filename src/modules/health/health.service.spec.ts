@@ -9,7 +9,11 @@ describe("HealthService", () => {
   let service: HealthService;
   let repo: jest.Mocked<Repository<HealthCheck>>;
   let loggerErrorSpy: jest.SpyInstance;
-  const qb: any = {
+
+  const qb: {
+    orderBy: jest.Mock;
+    getOne: jest.Mock;
+  } = {
     orderBy: jest.fn(),
     getOne: jest.fn(),
   };
@@ -35,7 +39,9 @@ describe("HealthService", () => {
 
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2025-12-10T22:14:09.892Z"));
-    loggerErrorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation();
+
+    const logger = (service as any).logger as Logger;
+    loggerErrorSpy = jest.spyOn(logger, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -44,7 +50,6 @@ describe("HealthService", () => {
     jest.clearAllMocks();
     qb.orderBy.mockReset();
     qb.getOne.mockReset();
-    loggerErrorSpy.mockRestore();
   });
 
   it("should be defined", () => {
@@ -74,6 +79,8 @@ describe("HealthService", () => {
       responseTimeMs: 0,
       lastDbHealth: lastRecord,
     });
+
+    expect(loggerErrorSpy).not.toHaveBeenCalled();
   });
 
   it("should return db down when query fails", async () => {
@@ -82,6 +89,9 @@ describe("HealthService", () => {
     const result = await service.getStatus();
 
     expect(repo.create).not.toHaveBeenCalled();
+    expect(repo.save).not.toHaveBeenCalled();
+    expect(qb.getOne).not.toHaveBeenCalled();
+
     expect(result).toEqual({
       status: "error",
       db: "down",
@@ -89,5 +99,7 @@ describe("HealthService", () => {
       responseTimeMs: 0,
       lastDbHealth: null,
     });
+
+    expect(loggerErrorSpy).toHaveBeenCalled();
   });
 });

@@ -10,9 +10,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        console.log('TypeORM Config:', configService.get('typeorm'));
-        return {...configService.get('typeorm')}
-      }
+        console.log("TypeORM Config:", configService.get("typeorm"));
+        const typeormConfig = await configService.get("typeorm");
+        return { ...typeormConfig };
+      },
     }),
     ConfigModule,
     HealthModule,
