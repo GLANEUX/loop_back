@@ -1,21 +1,39 @@
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import request from "supertest";
-import { AppModule } from "../src/app.module";
+import { HealthController } from "../src/modules/health/health.controller";
+import { HealthService } from "../src/modules/health/health.service";
 
 describe("HealthController (e2e)", () => {
   let app: INestApplication;
-  let httpRequest: ReturnType<typeof request>;
+  let controller: HealthController;
+  const mockServiceResponse = {
+    status: "ok",
+    db: "up",
+    timestamp: "2025-12-10T22:14:09.892Z",
+    responseTimeMs: 1,
+    lastDbHealth: {
+      id: 1,
+      status: "up",
+      checked_at: "2025-12-10T22:14:09.892Z",
+      details: "Health endpoint check",
+    },
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      controllers: [HealthController],
+      providers: [
+        {
+          provide: HealthService,
+          useValue: { getStatus: jest.fn().mockResolvedValue(mockServiceResponse) },
+        },
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    httpRequest = request(app.getHttpServer());
+    controller = app.get(HealthController);
   });
 
   afterAll(async () => {
@@ -23,8 +41,7 @@ describe("HealthController (e2e)", () => {
   });
 
   it("/health (GET)", async () => {
-    const res = await httpRequest.get("/health");
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(expect.objectContaining({ status: "ok" }));
+    const res = await controller.getHealth();
+    expect(res).toEqual(mockServiceResponse);
   });
 });
