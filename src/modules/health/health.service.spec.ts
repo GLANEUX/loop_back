@@ -88,7 +88,9 @@ describe("HealthService", () => {
 
     const result = await service.getStatus();
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.create).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.save).not.toHaveBeenCalled();
     expect(qb.getOne).not.toHaveBeenCalled();
 
