@@ -9,7 +9,8 @@ const dataSource = new DataSource({
   url: process.env.DATABASE_URL,
   // si tu ajoutes des entités plus tard :
   // entities: [join(__dirname, "..", "src", "**", "*.entity.{ts,js}")],
-  migrations: [join(__dirname, "migrations", "**/*.ts")],
+  // Allow running migrations both from TS (dev) and compiled JS (prod)
+  migrations: [join(__dirname, "migrations", "**/*.{ts,js}")],
   synchronize: false,
 });
 
