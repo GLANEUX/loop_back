@@ -47,13 +47,33 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
+
             echo "Pulling latest changes from main..."
             cd /home/loop_back
             git pull origin main
+
             echo "Rebuilding Docker stack..."
             cd docker/prod
             docker compose down
             docker compose up -d --build
-            echo "Deployment complete ✅"
-            sleep 5
-            curl -f https://back.loop-app.fr/health || (echo "❌ Health check failed" && exit 1)
+
+            echo "Waiting API container..."
+            docker compose ps
+
+            echo "Running DB migrations..."
+            docker compose exec -T api npx typeorm migration:run -d dist/db/data-source.js
+
+            echo "Health check..."
+            for i in {1..30}; do
+              if curl -fsS https://back.loop-app.fr/health >/dev/null; then
+                echo "✅ Health check OK"
+                exit 0
+              fi
+              echo "⏳ waiting... ($i/30)"
+              sleep 2
+            done
+
+            echo "❌ Health check failed"
+            docker compose logs --tail=200 api
+            exit 1
