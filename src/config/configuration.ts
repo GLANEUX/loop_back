@@ -8,7 +8,7 @@ dotenv.config({
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string(),
   JWT_SECRET: z.string().min(1, { message: "JWT_SECRET is required" }),
   LOG_LEVEL: z.string().default("info"),
