@@ -2,15 +2,20 @@ import { config } from "dotenv";
 import { DataSource } from "typeorm";
 import { join } from "node:path";
 
-config(); // charge .env.development via docker-compose
+config(); // charge l'env du conteneur (env_file docker compose)
+
+const isProd = process.env.NODE_ENV === "production";
+
+// en prod, __dirname = dist/db
+// en dev,  __dirname = db
+const migrationsGlob = isProd
+  ? join(__dirname, "migrations", "**/*.js")
+  : join(__dirname, "migrations", "**/*.ts");
 
 const dataSource = new DataSource({
   type: "postgres",
   url: process.env.DATABASE_URL,
-  // si tu ajoutes des entités plus tard :
-  // entities: [join(__dirname, "..", "src", "**", "*.entity.{ts,js}")],
-  // Allow running migrations both from TS (dev) and compiled JS (prod)
-  migrations: [join(__dirname, "migrations", "**/*.{ts,js}")],
+  migrations: [migrationsGlob],
   synchronize: false,
 });
 
