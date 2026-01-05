@@ -11,6 +11,8 @@ services:
       - db
     networks:
       - vps-mds
+    ports:
+      - "3000:8080"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.loop_api.rule=Host(`back.loop-app.fr`)"
