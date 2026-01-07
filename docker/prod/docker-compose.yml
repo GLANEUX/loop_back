@@ -13,9 +13,6 @@ services:
       - db
     networks:
       - vps-mds
-    volumes:
-      - ../..:/usr/src/app
-      - /usr/src/app/node_modules
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.loop_api.rule=Host(`back.loop-app.fr`)"

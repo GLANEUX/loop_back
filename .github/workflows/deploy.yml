@@ -47,38 +47,39 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -e
+              set -e
 
-            cd /home/loop_back
-            git pull origin main
+              cd /home/loop_back
+              git pull origin main
 
-            cd docker/prod
-            docker compose down
-            docker compose up -d --build
+              cd docker/prod
+              docker compose down
+              docker compose up -d --build
 
-            # attendre un peu que le container soit stable
-            sleep 3
-
-            # migrations avec retry (si tu ne les mets pas au CMD)
-            for i in {1..10}; do
-              if docker compose exec -T api npx typeorm migration:run -d dist/db/data-source.js; then
-                echo "✅ Migrations OK"
-                break
-              fi
-              echo "⏳ migrations retry ($i/10)"
+              # attendre un peu
               sleep 3
-            done
 
-            # health local (plus fiable que le domaine)
-            for i in {1..30}; do
-              if curl -fsS http://localhost:8080/health >/dev/null; then
-                echo "✅ Health check OK"
-                exit 0
-              fi
-              echo "⏳ waiting health ($i/30)"
-              sleep 2
-            done
+              # migrations (retry)
+              for i in {1..10}; do
+                if docker compose exec -T api npm run migration:run:prod; then
+                  echo "✅ Migrations OK"
+                  break
+                fi
+                echo "⏳ migrations retry ($i/10)"
+                sleep 3
+              done
 
-            echo "❌ Health check failed"
-            docker compose logs --tail=200 api
-            exit 1
+              # healthcheck DANS le conteneur (port interne 8080)
+              for i in {1..30}; do
+                if docker compose exec -T api sh -lc "curl -fsS http://localhost:8080/health >/dev/null"; then
+                  echo "✅ Health check OK"
+                  exit 0
+                fi
+                echo "⏳ waiting health ($i/30)"
+                sleep 2
+              done
+
+              echo "❌ Health check failed"
+              docker compose logs --tail=200 api
+              exit 1
+
