@@ -69,15 +69,15 @@ jobs:
                 sleep 3
               done
 
-              # healthcheck DANS le conteneur (port interne 8080)
-              for i in {1..30}; do
-                if docker compose exec -T api sh -lc "curl -fsS http://localhost:8080/health >/dev/null"; then
+              for i in {1..10}; do
+                if curl -fsS http://localhost:3001/health >/dev/null; then
                   echo "✅ Health check OK"
                   exit 0
                 fi
                 echo "⏳ waiting health ($i/30)"
                 sleep 2
               done
+
 
               echo "❌ Health check failed"
               docker compose logs --tail=200 api
