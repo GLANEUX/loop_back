@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { MoreThan, Repository } from "typeorm";
 import { UsersService } from "@modules/users/users.service";
 import { UserRole } from "@modules/users/user-role.enum";
+import { RateLimitService } from "./rate-limit.service";
 import { Session } from "./session.entity";
 import {
   SESSION_DURATION_DAYS,
@@ -21,23 +22,50 @@ export class AuthService {
     private readonly usersService: UsersService,
     @InjectRepository(Session)
     private readonly sessionRepo: Repository<Session>,
+    private readonly rateLimitService: RateLimitService,
   ) {}
 
   async register(email: string, password: string, context: AuthContext) {
+    const ip = context.ip ?? "unknown";
+    const registerKey = `register:${ip}`;
+    const registerLimit = this.rateLimitService.hit(registerKey, 5, 60_000);
+    if (!registerLimit.allowed) {
+      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     const passwordHash = hashPassword(password);
     const user = await this.usersService.createUser(email, passwordHash);
     return this.createSession(user.id, user.email, user.role, context);
   }
 
   async login(email: string, password: string, context: AuthContext) {
+    const ip = context.ip ?? "unknown";
+    const normalizedEmail = email.trim().toLowerCase();
+    const ipKey = `login:ip:${ip}`;
+    const ipEmailKey = `login:ip-email:${ip}:${normalizedEmail}`;
+
+    if (this.rateLimitService.isLimited(ipKey, 10, 60_000)) {
+      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (this.rateLimitService.isLimited(ipEmailKey, 5, 60_000)) {
+      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     const user = await this.usersService.findByEmail(email);
     if (!user?.password) {
+      this.rateLimitService.hit(ipKey, 10, 60_000);
+      this.rateLimitService.hit(ipEmailKey, 5, 60_000);
       throw new UnauthorizedException("Invalid credentials");
     }
 
     if (!verifyPassword(password, user.password)) {
+      this.rateLimitService.hit(ipKey, 10, 60_000);
+      this.rateLimitService.hit(ipEmailKey, 5, 60_000);
       throw new UnauthorizedException("Invalid credentials");
     }
+
+    this.rateLimitService.reset(ipKey);
+    this.rateLimitService.reset(ipEmailKey);
 
     return this.createSession(user.id, user.email, user.role, context);
   }

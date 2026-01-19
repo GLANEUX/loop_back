@@ -5,6 +5,7 @@ import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
 import { env } from "@config/configuration";
 import { Request, Response, NextFunction } from "express";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
   const logger = WinstonModule.createLogger({
@@ -21,6 +22,15 @@ async function bootstrap() {
     req.requestId = uuidv4();
     next();
   });
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("Loop API")
+    .setDescription("API documentation")
+    .setVersion("1.0.0")
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup("docs", app, document);
 
   await app.listen(env.PORT);
   logger.log("info", `🚀 API running on port ${env.PORT} [${env.NODE_ENV}]`);
