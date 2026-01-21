@@ -22,7 +22,6 @@ import { GlobalThrottlerGuard } from "./guards/global-throttler.guard";
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const typeormConfig = configService.getOrThrow<TypeOrmModuleOptions>("typeorm");
-        console.log("TypeORM Config:", typeormConfig);
         return { ...typeormConfig };
       },
     }),

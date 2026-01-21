@@ -35,6 +35,10 @@ export class RateLimitService {
     this.store.delete(key);
   }
 
+  resetAll() {
+    this.store.clear();
+  }
+
   private getRecord(key: string, windowMs: number): RateLimitRecord {
     const now = Date.now();
     const current = this.store.get(key);
