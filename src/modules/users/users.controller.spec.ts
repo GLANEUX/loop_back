@@ -36,6 +36,7 @@ describe("UsersController", () => {
   it("soft deletes current user", async () => {
     const request = { user: { id: "user-1" } } as Request;
     const result = await controller.softDeleteMe(request);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.softDeleteById).toHaveBeenCalledWith("user-1");
     expect(result).toEqual({ ok: true });
   });

@@ -118,10 +118,7 @@ describe("Auth (e2e)", () => {
 
     const token = registerRes.body.accessToken;
 
-    await request(server)
-      .post("/auth/logout")
-      .set("Authorization", `Bearer ${token}`)
-      .expect(201);
+    await request(server).post("/auth/logout").set("Authorization", `Bearer ${token}`).expect(201);
 
     await request(server).get("/user/me").set("Authorization", `Bearer ${token}`).expect(401);
   });

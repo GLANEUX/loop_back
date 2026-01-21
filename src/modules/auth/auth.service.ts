@@ -30,7 +30,10 @@ export class AuthService {
     const registerKey = `register:${ip}`;
     const registerLimit = this.rateLimitService.hit(registerKey, 5, 60_000);
     if (!registerLimit.allowed) {
-      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        "Trop de tentatives. Reessayez plus tard.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const passwordHash = hashPassword(password);
@@ -45,10 +48,16 @@ export class AuthService {
     const ipEmailKey = `login:ip-email:${ip}:${normalizedEmail}`;
 
     if (this.rateLimitService.isLimited(ipKey, 10, 60_000)) {
-      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        "Trop de tentatives. Reessayez plus tard.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
     if (this.rateLimitService.isLimited(ipEmailKey, 5, 60_000)) {
-      throw new HttpException("Trop de tentatives. Reessayez plus tard.", HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        "Trop de tentatives. Reessayez plus tard.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const user = await this.usersService.findByEmail(email);

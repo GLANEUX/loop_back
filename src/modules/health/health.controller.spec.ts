@@ -11,7 +11,9 @@ describe("HealthController", () => {
       lastDbHealth: null,
     };
 
-    const service = { getStatus: jest.fn().mockResolvedValue(mockResponse) } as unknown as HealthService;
+    const service = {
+      getStatus: jest.fn().mockResolvedValue(mockResponse),
+    } as unknown as HealthService;
     const controller = new HealthController(service);
 
     await expect(controller.getHealth()).resolves.toEqual(mockResponse);

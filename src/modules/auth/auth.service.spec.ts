@@ -91,7 +91,9 @@ describe("AuthService", () => {
       email: "test@loop.local",
       role: UserRole.User,
     });
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.createUser).toHaveBeenCalledWith("test@loop.local", "hashed");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(sessionRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-1", token: "hashed-token" }),
     );
@@ -113,6 +115,7 @@ describe("AuthService", () => {
       service.login("test@loop.local", "password123", { ip: "1.1.1.1" }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(rateLimitService.hit).toHaveBeenCalled();
   });
 
@@ -130,6 +133,7 @@ describe("AuthService", () => {
       service.login("test@loop.local", "password123", { ip: "1.1.1.1" }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(rateLimitService.hit).toHaveBeenCalled();
   });
 
@@ -151,6 +155,7 @@ describe("AuthService", () => {
     const result = await service.login("test@loop.local", "password123", { ip: "1.1.1.1" });
 
     expect(result.accessToken).toBe("raw-token");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(rateLimitService.reset).toHaveBeenCalled();
   });
 });

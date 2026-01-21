@@ -1,12 +1,6 @@
 import { Controller, Delete, Get, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "@modules/auth/auth.guard";
 import { UsersService } from "./users.service";
 

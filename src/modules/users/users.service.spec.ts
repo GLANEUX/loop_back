@@ -37,6 +37,7 @@ describe("UsersService", () => {
   it("normalizes email in findByEmail", async () => {
     repo.findOne.mockResolvedValueOnce(null);
     await service.findByEmail("  TEST@Loop.local ");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.findOne).toHaveBeenCalledWith({
       where: { email: "test@loop.local" },
     });
@@ -57,6 +58,7 @@ describe("UsersService", () => {
 
     await service.createUser("  TEST@Loop.local ", "hashed");
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.create).toHaveBeenCalledWith({
       email: "test@loop.local",
       password: "hashed",
@@ -66,6 +68,7 @@ describe("UsersService", () => {
 
   it("soft deletes a user by id", async () => {
     await service.softDeleteById("user-1");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.softDelete).toHaveBeenCalledWith("user-1");
   });
 });

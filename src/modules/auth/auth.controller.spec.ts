@@ -43,6 +43,7 @@ describe("AuthController", () => {
       request,
     );
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(authService.register).toHaveBeenCalledWith("test@loop.local", "Test1234!", {
       userAgent: "jest",
       ip: "1.1.1.1",
@@ -66,6 +67,7 @@ describe("AuthController", () => {
       request,
     );
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(authService.login).toHaveBeenCalledWith("test@loop.local", "Test1234!", {
       userAgent: "jest",
       ip: "1.1.1.1",
@@ -77,6 +79,7 @@ describe("AuthController", () => {
     const request = { sessionId: "session-1" } as Request;
     const result = await controller.logout(request);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(authService.logout).toHaveBeenCalledWith("session-1");
     expect(result).toEqual({ ok: true });
   });

@@ -65,10 +65,7 @@ describe("Users (e2e)", () => {
 
     const token = registerRes.body.accessToken;
 
-    await request(server)
-      .delete("/user/me")
-      .set("Authorization", `Bearer ${token}`)
-      .expect(200);
+    await request(server).delete("/user/me").set("Authorization", `Bearer ${token}`).expect(200);
 
     await request(server)
       .post("/auth/login")
