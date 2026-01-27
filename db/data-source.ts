@@ -13,7 +13,7 @@ const migrationsGlob = isProd
   ? join(__dirname, "migrations", "**/*.js")
   : join(__dirname, "migrations", "**/*.ts");
 const entitiesGlob = isProd
-  ? join(__dirname, "..", "dist", "**", "*.entity.js")
+  ? join(__dirname, "..", "**", "*.entity.js")
   : join(__dirname, "..", "src", "**", "*.entity.ts");
 
 const dataSource = new DataSource({
