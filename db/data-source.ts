@@ -1,3 +1,4 @@
+import "tsconfig-paths/register";
 import { config } from "dotenv";
 import { DataSource } from "typeorm";
 import { join } from "node:path";
@@ -11,10 +12,14 @@ const isProd = process.env.NODE_ENV === "production";
 const migrationsGlob = isProd
   ? join(__dirname, "migrations", "**/*.js")
   : join(__dirname, "migrations", "**/*.ts");
+const entitiesGlob = isProd
+  ? join(__dirname, "..", "dist", "**", "*.entity.js")
+  : join(__dirname, "..", "src", "**", "*.entity.ts");
 
 const dataSource = new DataSource({
   type: "postgres",
   url: process.env.DATABASE_URL,
+  entities: [entitiesGlob],
   migrations: [migrationsGlob],
   synchronize: false,
 });

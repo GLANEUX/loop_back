@@ -4,7 +4,7 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": [
+    "^.+\\.ts$": [
       "ts-jest",
       {
         "tsconfig": "tsconfig.json",
@@ -12,9 +12,12 @@
       }
     ]
   },
+  "globalSetup": "<rootDir>/jest-global-setup.js",
+  "globalTeardown": "<rootDir>/jest-global-teardown.js",
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/../src/$1",
     "^@modules/(.*)$": "<rootDir>/../src/modules/$1",
     "^@config/(.*)$": "<rootDir>/../src/config/$1"
-  }
+  },
+  "maxWorkers": 1
 }

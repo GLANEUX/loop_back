@@ -59,4 +59,8 @@ npm run test:e2e
 
 ---
 
+## 📚 Documentation API
+
+Swagger est disponible sur `http://localhost:3000/docs`.
+
 © 2025 Loop Team.
