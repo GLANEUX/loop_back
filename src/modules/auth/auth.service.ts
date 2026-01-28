@@ -25,7 +25,14 @@ export class AuthService {
     private readonly rateLimitService: RateLimitService,
   ) {}
 
-  async register(email: string, password: string, context: AuthContext) {
+  async register(
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    role: UserRole,
+    context: AuthContext,
+  ) {
     const ip = context.ip ?? "unknown";
     const registerKey = `register:${ip}`;
     const registerLimit = this.rateLimitService.hit(registerKey, 5, 60_000);
@@ -37,8 +44,21 @@ export class AuthService {
     }
 
     const passwordHash = hashPassword(password);
-    const user = await this.usersService.createUser(email, passwordHash);
-    return this.createSession(user.id, user.email, user.role, context);
+    const user = await this.usersService.createUser(
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      role,
+    );
+    return this.createSession(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      context,
+    );
   }
 
   async login(email: string, password: string, context: AuthContext) {
@@ -76,7 +96,14 @@ export class AuthService {
     this.rateLimitService.reset(ipKey);
     this.rateLimitService.reset(ipEmailKey);
 
-    return this.createSession(user.id, user.email, user.role, context);
+    return this.createSession(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      context,
+    );
   }
 
   async validateSessionToken(token: string): Promise<AuthSession | null> {
@@ -96,6 +123,8 @@ export class AuthService {
         id: session.user.id,
         email: session.user.email,
         role: session.user.role,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
       },
       expiresAt: session.expiresAt,
     };
@@ -105,7 +134,14 @@ export class AuthService {
     await this.sessionRepo.softDelete(sessionId);
   }
 
-  private async createSession(userId: string, email: string, role: UserRole, context: AuthContext) {
+  private async createSession(
+    userId: string,
+    email: string,
+    role: UserRole,
+    firstName: string,
+    lastName: string,
+    context: AuthContext,
+  ) {
     const rawToken = generateSessionToken();
     const tokenHash = hashToken(rawToken);
     const now = new Date();
@@ -128,6 +164,8 @@ export class AuthService {
         id: userId,
         email,
         role,
+        firstName,
+        lastName,
       },
     };
   }

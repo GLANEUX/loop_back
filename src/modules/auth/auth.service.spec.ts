@@ -61,7 +61,9 @@ describe("AuthService", () => {
     rateLimitService.hit.mockReturnValueOnce({ count: 5, resetAt: Date.now(), allowed: false });
 
     await expect(
-      service.register("test@loop.local", "password123", { ip: "1.1.1.1" }),
+      service.register("test@loop.local", "password123", "Ada", "Lovelace", UserRole.User, {
+        ip: "1.1.1.1",
+      }),
     ).rejects.toBeInstanceOf(HttpException);
   });
 
@@ -72,6 +74,8 @@ describe("AuthService", () => {
       email: "test@loop.local",
       password: "hashed",
       role: UserRole.User,
+      firstName: "Ada",
+      lastName: "Lovelace",
     } as any);
 
     jest.spyOn(authUtils, "hashPassword").mockReturnValueOnce("hashed");
@@ -83,16 +87,33 @@ describe("AuthService", () => {
     } as Session);
     sessionRepo.save.mockResolvedValueOnce({} as Session);
 
-    const result = await service.register("test@loop.local", "password123", { ip: "1.1.1.1" });
+    const result = await service.register(
+      "test@loop.local",
+      "password123",
+      "Ada",
+      "Lovelace",
+      UserRole.User,
+      {
+        ip: "1.1.1.1",
+      },
+    );
 
     expect(result.accessToken).toBe("raw-token");
     expect(result.user).toEqual({
       id: "user-1",
       email: "test@loop.local",
       role: UserRole.User,
+      firstName: "Ada",
+      lastName: "Lovelace",
     });
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(usersService.createUser).toHaveBeenCalledWith("test@loop.local", "hashed");
+    expect(usersService.createUser).toHaveBeenCalledWith(
+      "test@loop.local",
+      "hashed",
+      "Ada",
+      "Lovelace",
+      UserRole.User,
+    );
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(sessionRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-1", token: "hashed-token" }),
@@ -126,6 +147,8 @@ describe("AuthService", () => {
       email: "test@loop.local",
       password: "hashed",
       role: UserRole.User,
+      firstName: "Ada",
+      lastName: "Lovelace",
     } as any);
     jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(false);
 
@@ -144,6 +167,8 @@ describe("AuthService", () => {
       email: "test@loop.local",
       password: "hashed",
       role: UserRole.User,
+      firstName: "Ada",
+      lastName: "Lovelace",
     } as any);
     jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(true);
     jest.spyOn(authUtils, "generateSessionToken").mockReturnValueOnce("raw-token");

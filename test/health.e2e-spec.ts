@@ -21,6 +21,15 @@ describe("Health (e2e)", () => {
   });
 
   it("returns health status", async () => {
-    await request(app.getHttpServer()).get("/health").expect(200);
+    const res = await request(app.getHttpServer()).get("/health").expect(200);
+
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        status: "ok",
+        db: "up",
+        timestamp: expect.any(String),
+        responseTimeMs: expect.any(Number),
+      }),
+    );
   });
 });

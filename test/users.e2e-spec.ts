@@ -5,6 +5,13 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { RateLimitService } from "../src/modules/auth/rate-limit.service";
 
+const registerPayload = (email: string) => ({
+  email,
+  password: "Test1234!",
+  firstName: "Ada",
+  lastName: "Lovelace",
+});
+
 describe("Users (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
@@ -27,7 +34,9 @@ describe("Users (e2e)", () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query(`TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE`);
+    await dataSource.query(
+      `TRUNCATE TABLE "profile_genres", "profile_instruments", "genres", "instruments", "profiles", "sessions", "users" RESTART IDENTITY CASCADE`,
+    );
     rateLimitService.resetAll();
   });
 
@@ -36,7 +45,7 @@ describe("Users (e2e)", () => {
 
     const registerRes = await request(server)
       .post("/auth/register")
-      .send({ email: "me@loop.local", password: "Test1234!" })
+      .send(registerPayload("me@loop.local"))
       .expect(201);
 
     const token = registerRes.body.accessToken;
@@ -48,6 +57,8 @@ describe("Users (e2e)", () => {
       .expect(200);
 
     expect(meRes.body.email).toBe("me@loop.local");
+    expect(meRes.body.firstName).toBe("Ada");
+    expect(meRes.body.profile).toBeDefined();
   });
 
   it("requires auth for /user/me", async () => {
@@ -55,12 +66,92 @@ describe("Users (e2e)", () => {
     await request(server).get("/user/me").expect(401);
   });
 
+  it("requires auth for /user/me/profile", async () => {
+    const server = app.getHttpServer();
+    await request(server).get("/user/me/profile").expect(401);
+  });
+
+  it("updates profile with genres and instruments", async () => {
+    const server = app.getHttpServer();
+
+    const registerRes = await request(server)
+      .post("/auth/register")
+      .send(registerPayload("profile@loop.local"))
+      .expect(201);
+
+    const token = registerRes.body.accessToken;
+
+    await request(server)
+      .patch("/user/me/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        genres: ["Rock", "Jazz", " Rock "],
+        instruments: [
+          { instrument: "Guitar", level: "Intermediate" },
+          { instrument: "Piano", level: "Beginner" },
+        ],
+      })
+      .expect(200);
+
+    const profileRes = await request(server)
+      .get("/user/me/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(profileRes.body.genres).toEqual(["Rock", "Jazz"]);
+    expect(profileRes.body.instruments).toEqual([
+      { instrument: "Guitar", level: "Intermediate" },
+      { instrument: "Piano", level: "Beginner" },
+    ]);
+  });
+
+  it("forbids profile access for admins", async () => {
+    const server = app.getHttpServer();
+
+    const registerRes = await request(server)
+      .post("/auth/register")
+      .send({ ...registerPayload("admin@loop.local"), role: "admin" })
+      .expect(201);
+
+    const token = registerRes.body.accessToken;
+
+    await request(server)
+      .get("/user/me/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+  });
+
+  it("lists profiles for admins", async () => {
+    const server = app.getHttpServer();
+
+    await request(server)
+      .post("/auth/register")
+      .send(registerPayload("user1@loop.local"))
+      .expect(201);
+
+    const adminRes = await request(server)
+      .post("/auth/register")
+      .send({ ...registerPayload("admin2@loop.local"), role: "admin" })
+      .expect(201);
+
+    const adminToken = adminRes.body.accessToken;
+
+    const profilesRes = await request(server)
+      .get("/user/profiles")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(Array.isArray(profilesRes.body)).toBe(true);
+    expect(profilesRes.body.length).toBe(1);
+    expect(profilesRes.body[0].displayName).toBe("Ada Lovelace");
+  });
+
   it("soft deletes current user", async () => {
     const server = app.getHttpServer();
 
     const registerRes = await request(server)
       .post("/auth/register")
-      .send({ email: "del@loop.local", password: "Test1234!" })
+      .send(registerPayload("del@loop.local"))
       .expect(201);
 
     const token = registerRes.body.accessToken;
