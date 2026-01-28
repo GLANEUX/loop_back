@@ -25,10 +25,13 @@ export class AuthController {
   @ApiBody({
     schema: {
       type: "object",
-      required: ["email", "password"],
+      required: ["email", "password", "firstName", "lastName"],
       properties: {
         email: { type: "string", format: "email", example: "test@loop.local" },
         password: { type: "string", minLength: 8, example: "Test1234!" },
+        firstName: { type: "string", example: "Ada" },
+        lastName: { type: "string", example: "Lovelace" },
+        role: { type: "string", enum: ["user", "admin"], example: "user" },
       },
     },
   })
@@ -44,6 +47,8 @@ export class AuthController {
             id: { type: "string", format: "uuid" },
             email: { type: "string", format: "email" },
             role: { type: "string" },
+            firstName: { type: "string" },
+            lastName: { type: "string" },
           },
         },
       },
@@ -92,10 +97,17 @@ export class AuthController {
       throw new BadRequestException(z.treeifyError(parsed.error));
     }
 
-    return this.authService.register(parsed.data.email, parsed.data.password, {
-      userAgent: request.headers["user-agent"],
-      ip: request.ip,
-    });
+    return this.authService.register(
+      parsed.data.email,
+      parsed.data.password,
+      parsed.data.firstName,
+      parsed.data.lastName,
+      parsed.data.role,
+      {
+        userAgent: request.headers["user-agent"],
+        ip: request.ip,
+      },
+    );
   }
 
   @ApiOperation({
@@ -124,6 +136,8 @@ export class AuthController {
             id: { type: "string", format: "uuid" },
             email: { type: "string", format: "email" },
             role: { type: "string" },
+            firstName: { type: "string" },
+            lastName: { type: "string" },
           },
         },
       },

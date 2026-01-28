@@ -5,6 +5,13 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { RateLimitService } from "../src/modules/auth/rate-limit.service";
 
+const registerPayload = (email: string) => ({
+  email,
+  password: "Test1234!",
+  firstName: "Ada",
+  lastName: "Lovelace",
+});
+
 describe("Auth (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
@@ -27,7 +34,9 @@ describe("Auth (e2e)", () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query(`TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE`);
+    await dataSource.query(
+      `TRUNCATE TABLE "profiles", "sessions", "users" RESTART IDENTITY CASCADE`,
+    );
     rateLimitService.resetAll();
   });
 
@@ -36,7 +45,7 @@ describe("Auth (e2e)", () => {
 
     const registerRes = await request(server)
       .post("/auth/register")
-      .send({ email: "test@loop.local", password: "Test1234!" })
+      .send(registerPayload("test@loop.local"))
       .expect(201);
 
     expect(registerRes.body.accessToken).toBeDefined();
@@ -62,12 +71,12 @@ describe("Auth (e2e)", () => {
 
     await request(server)
       .post("/auth/register")
-      .send({ email: "dup@loop.local", password: "Test1234!" })
+      .send(registerPayload("dup@loop.local"))
       .expect(201);
 
     await request(server)
       .post("/auth/register")
-      .send({ email: "dup@loop.local", password: "Test1234!" })
+      .send(registerPayload("dup@loop.local"))
       .expect(409);
   });
 
@@ -77,13 +86,16 @@ describe("Auth (e2e)", () => {
     for (let i = 0; i < 5; i += 1) {
       await request(server)
         .post("/auth/register")
-        .send({ email: `rl${i}@loop.local`, password: "Test1234!" })
+        .send({
+          ...registerPayload(`rl${i}@loop.local`),
+          firstName: `Ada${i}`,
+        })
         .expect(201);
     }
 
     await request(server)
       .post("/auth/register")
-      .send({ email: "rl5@loop.local", password: "Test1234!" })
+      .send(registerPayload("rl5@loop.local"))
       .expect(429);
   });
 
@@ -92,7 +104,7 @@ describe("Auth (e2e)", () => {
 
     await request(server)
       .post("/auth/register")
-      .send({ email: "rate@loop.local", password: "Test1234!" })
+      .send(registerPayload("rate@loop.local"))
       .expect(201);
 
     for (let i = 0; i < 5; i += 1) {
@@ -113,7 +125,7 @@ describe("Auth (e2e)", () => {
 
     const registerRes = await request(server)
       .post("/auth/register")
-      .send({ email: "logout@loop.local", password: "Test1234!" })
+      .send(registerPayload("logout@loop.local"))
       .expect(201);
 
     const token = registerRes.body.accessToken;
@@ -121,5 +133,11 @@ describe("Auth (e2e)", () => {
     await request(server).post("/auth/logout").set("Authorization", `Bearer ${token}`).expect(201);
 
     await request(server).get("/user/me").set("Authorization", `Bearer ${token}`).expect(401);
+  });
+
+  it("requires auth for logout", async () => {
+    const server = app.getHttpServer();
+
+    await request(server).post("/auth/logout").expect(401);
   });
 });
