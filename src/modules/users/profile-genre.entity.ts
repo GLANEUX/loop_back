@@ -1,10 +1,4 @@
-import {
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryColumn,
-} from "typeorm";
+import { DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { GenreEntity } from "./genre.entity";
 import { Profile } from "./profile.entity";
 

@@ -310,8 +310,12 @@ describe("UsersService", () => {
       ],
     });
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileGenreRepo.delete).toHaveBeenCalledWith({ profileId: "profile-1" });
-    expect(profileInstrumentRepo.delete).toHaveBeenCalledWith({ profileId: "profile-1" });
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(profileInstrumentRepo.delete).toHaveBeenCalledWith({
+      profileId: "profile-1",
+    });
     expect(result).toEqual({
       id: "profile-1",
       genres: ["Rock"],
@@ -333,6 +337,7 @@ describe("UsersService", () => {
 
     const result = await service.updateProfileForUser("user-1", { displayName: "Ada" });
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileRepo.create).toHaveBeenCalledWith({
       userId: "user-1",
       displayName: "Ada Lovelace",

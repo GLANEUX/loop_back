@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { GenreEntity } from "./genre.entity";
@@ -63,9 +68,10 @@ export class UsersService {
     const { genres, instruments, ...rest } = profile;
     return {
       ...rest,
-      genres: genres
-        ?.map((profileGenre) => profileGenre.genre?.name)
-        .filter((name): name is string => Boolean(name)) ?? [],
+      genres:
+        genres
+          ?.map((profileGenre) => profileGenre.genre?.name)
+          .filter((name): name is string => Boolean(name)) ?? [],
       instruments:
         instruments
           ?.map((profileInstrument) =>
@@ -177,12 +183,7 @@ export class UsersService {
 
   async updateProfileForUser(
     userId: string,
-    updates: Partial<
-      Pick<
-        Profile,
-        "displayName" | "bio" | "avatarUrl" | "isPublic"
-      >
-    > & {
+    updates: Partial<Pick<Profile, "displayName" | "bio" | "avatarUrl" | "isPublic">> & {
       genres?: string[];
       instruments?: { instrument: string; level: InstrumentLevel }[];
     },

@@ -34,7 +34,9 @@ describe("Auth (e2e)", () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query(`TRUNCATE TABLE "profiles", "sessions", "users" RESTART IDENTITY CASCADE`);
+    await dataSource.query(
+      `TRUNCATE TABLE "profiles", "sessions", "users" RESTART IDENTITY CASCADE`,
+    );
     rateLimitService.resetAll();
   });
 
@@ -67,9 +69,15 @@ describe("Auth (e2e)", () => {
   it("rejects duplicate email", async () => {
     const server = app.getHttpServer();
 
-    await request(server).post("/auth/register").send(registerPayload("dup@loop.local")).expect(201);
+    await request(server)
+      .post("/auth/register")
+      .send(registerPayload("dup@loop.local"))
+      .expect(201);
 
-    await request(server).post("/auth/register").send(registerPayload("dup@loop.local")).expect(409);
+    await request(server)
+      .post("/auth/register")
+      .send(registerPayload("dup@loop.local"))
+      .expect(409);
   });
 
   it("rate limits registration", async () => {
@@ -85,13 +93,19 @@ describe("Auth (e2e)", () => {
         .expect(201);
     }
 
-    await request(server).post("/auth/register").send(registerPayload("rl5@loop.local")).expect(429);
+    await request(server)
+      .post("/auth/register")
+      .send(registerPayload("rl5@loop.local"))
+      .expect(429);
   });
 
   it("rate limits login per email", async () => {
     const server = app.getHttpServer();
 
-    await request(server).post("/auth/register").send(registerPayload("rate@loop.local")).expect(201);
+    await request(server)
+      .post("/auth/register")
+      .send(registerPayload("rate@loop.local"))
+      .expect(201);
 
     for (let i = 0; i < 5; i += 1) {
       await request(server)

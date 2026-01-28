@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { ZodError } from "zod";
 
 type ErrorResponseBody = {
@@ -30,7 +30,7 @@ export class AllExceptionsFilter {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request & { requestId?: string }>();
-    const response = ctx.getResponse();
+    const response = ctx.getResponse<Response>();
 
     const isZodError = exception instanceof ZodError;
     const isHttpException = exception instanceof HttpException;
@@ -49,7 +49,7 @@ export class AllExceptionsFilter {
       message: normalized.message ?? this.defaultMessageForStatus(statusCode),
       error: normalized.error ?? this.defaultErrorForStatus(statusCode),
       timestamp: new Date().toISOString(),
-      path: httpAdapter.getRequestUrl(request),
+      path: String(httpAdapter.getRequestUrl(request)),
       requestId: request.requestId,
     };
 
@@ -58,7 +58,8 @@ export class AllExceptionsFilter {
     );
 
     if (!isHttpException && !isZodError) {
-      const errorToLog = exception instanceof Error ? exception.stack ?? exception.message : exception;
+      const errorToLog =
+        exception instanceof Error ? (exception.stack ?? exception.message) : exception;
       this.logger.error(
         `Unhandled exception for ${request.method} ${request.url} [${request.requestId ?? "no-request-id"}]`,
         typeof errorToLog === "string" ? errorToLog : JSON.stringify(errorToLog),
@@ -68,9 +69,10 @@ export class AllExceptionsFilter {
     httpAdapter.reply(response, body, statusCode);
   }
 
-  private normalizeExceptionResponse(
-    response: string | object | undefined,
-  ): { message?: unknown; error?: string } {
+  private normalizeExceptionResponse(response: string | object | undefined): {
+    message?: unknown;
+    error?: string;
+  } {
     if (typeof response === "string") {
       return { message: response };
     }
@@ -80,7 +82,8 @@ export class AllExceptionsFilter {
     }
 
     const maybeMessage = "message" in response ? response.message : undefined;
-    const maybeError = "error" in response && typeof response.error === "string" ? response.error : undefined;
+    const maybeError =
+      "error" in response && typeof response.error === "string" ? response.error : undefined;
 
     if (maybeMessage !== undefined) {
       return { message: maybeMessage, error: maybeError };

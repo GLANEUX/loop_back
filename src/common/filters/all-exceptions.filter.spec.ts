@@ -4,7 +4,9 @@ import { ZodError, z } from "zod";
 import { AllExceptionsFilter } from "./all-exceptions.filter";
 
 describe("AllExceptionsFilter", () => {
-  const createHost = (requestOverrides?: Partial<{ url: string; method: string; requestId?: string }>) => {
+  const createHost = (
+    requestOverrides?: Partial<{ url: string; method: string; requestId?: string }>,
+  ) => {
     const request = {
       url: "/test",
       method: "GET",

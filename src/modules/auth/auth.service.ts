@@ -44,13 +44,7 @@ export class AuthService {
     }
 
     const passwordHash = hashPassword(password);
-    const user = await this.usersService.createUser(
-      email,
-      passwordHash,
-      firstName,
-      lastName,
-      role,
-    );
+    const user = await this.usersService.createUser(email, passwordHash, firstName, lastName, role);
     return this.createSession(
       user.id,
       user.email,

@@ -148,10 +148,7 @@ describe("UsersController", () => {
   it("rejects non-admin access to list profiles", async () => {
     const request = { user: { id: "user-1", role: UserRole.User } } as Request;
 
-    await expect(controller.listProfiles(request)).rejects.toHaveProperty(
-      "message",
-      "Admin only",
-    );
+    await expect(controller.listProfiles(request)).rejects.toHaveProperty("message", "Admin only");
   });
 
   it("lists profiles for admins", async () => {
