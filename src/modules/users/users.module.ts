@@ -7,6 +7,7 @@ import { Profile } from "./profile.entity";
 import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
 import { User } from "./user.entity";
+import { CatalogController } from "./catalog.controller";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
@@ -22,7 +23,7 @@ import { UsersService } from "./users.service";
     ]),
     forwardRef(() => AuthModule),
   ],
-  controllers: [UsersController],
+  controllers: [UsersController, CatalogController],
   providers: [UsersService],
   exports: [UsersService, TypeOrmModule],
 })

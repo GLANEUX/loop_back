@@ -41,7 +41,7 @@ export class AllExceptionsFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const normalized = isZodError
-      ? { message: this.formatZodError(exception), error: "Bad Request" }
+      ? { message: this.formatZodError(exception), error: "Requête invalide" }
       : this.normalizeExceptionResponse(isHttpException ? exception.getResponse() : undefined);
 
     const body: ErrorResponseBody = {
@@ -82,16 +82,18 @@ export class AllExceptionsFilter {
     }
 
     const maybeMessage = "message" in response ? response.message : undefined;
-    const maybeError =
-      "error" in response && typeof response.error === "string" ? response.error : undefined;
+    const maybeError = "error" in response ? response.error : undefined;
 
-    if (maybeMessage !== undefined) {
-      return { message: maybeMessage, error: maybeError };
+    if (maybeMessage !== undefined || maybeError !== undefined) {
+      return {
+        message: maybeMessage,
+        error: typeof maybeError === "string" ? maybeError : undefined,
+      };
     }
 
     // Some callers (like z.treeifyError) return a structured object without a `message` field.
     // In that case we surface the full object under `message` so the global envelope still applies.
-    return { message: response, error: maybeError };
+    return { message: response };
   }
 
   private formatZodError(error: ZodError): { issues: Array<{ path: string; message: string }> } {
@@ -104,21 +106,31 @@ export class AllExceptionsFilter {
 
   private defaultMessageForStatus(statusCode: number): string {
     if (statusCode >= 500) {
-      return "Internal server error";
+      return "Erreur interne du serveur";
     }
-    return "Request failed";
+    return "La requête a échoué";
   }
 
   private defaultErrorForStatus(statusCode: number): string {
-    const label = HttpStatus[statusCode];
-    return typeof label === "string" ? this.toTitleCase(label) : "Error";
-  }
-
-  private toTitleCase(value: string): string {
-    return value
-      .toLowerCase()
-      .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
+    switch (statusCode) {
+      case HttpStatus.BAD_REQUEST:
+        return "Requête invalide";
+      case HttpStatus.UNAUTHORIZED:
+        return "Non autorisé";
+      case HttpStatus.FORBIDDEN:
+        return "Interdit";
+      case HttpStatus.NOT_FOUND:
+        return "Introuvable";
+      case HttpStatus.CONFLICT:
+        return "Conflit";
+      case HttpStatus.UNPROCESSABLE_ENTITY:
+        return "Entité non traitable";
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return "Trop de requêtes";
+      case HttpStatus.INTERNAL_SERVER_ERROR:
+        return "Erreur interne du serveur";
+      default:
+        return "Erreur";
+    }
   }
 }

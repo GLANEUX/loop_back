@@ -25,12 +25,11 @@ export class AuthController {
   @ApiBody({
     schema: {
       type: "object",
-      required: ["email", "password", "firstName", "lastName"],
+      required: ["email", "pseudo", "password"],
       properties: {
         email: { type: "string", format: "email", example: "test@loop.local" },
+        pseudo: { type: "string", example: "loopster" },
         password: { type: "string", minLength: 8, example: "Test1234!" },
-        firstName: { type: "string", example: "Ada" },
-        lastName: { type: "string", example: "Lovelace" },
         role: { type: "string", enum: ["user", "admin"], example: "user" },
       },
     },
@@ -47,8 +46,7 @@ export class AuthController {
             id: { type: "string", format: "uuid" },
             email: { type: "string", format: "email" },
             role: { type: "string" },
-            firstName: { type: "string" },
-            lastName: { type: "string" },
+            pseudo: { type: "string" },
           },
         },
       },
@@ -56,25 +54,25 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: "Invalid payload",
+    description: "Payload invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 400 },
         message: { type: "object" },
-        error: { type: "string", example: "Bad Request" },
+        error: { type: "string", example: "Requête invalide" },
       },
     },
   })
   @ApiResponse({
     status: 409,
-    description: "Email already in use",
+    description: "Email déjà utilisé",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 409 },
-        message: { type: "string", example: "Email already in use" },
-        error: { type: "string", example: "Conflict" },
+        message: { type: "string", example: "Email déjà utilisé" },
+        error: { type: "string", example: "Conflit" },
       },
     },
   })
@@ -86,7 +84,7 @@ export class AuthController {
       properties: {
         statusCode: { type: "number", example: 429 },
         message: { type: "string", example: "Trop de tentatives. Reessayez plus tard." },
-        error: { type: "string", example: "Too Many Requests" },
+        error: { type: "string", example: "Trop de requêtes" },
       },
     },
   })
@@ -99,9 +97,8 @@ export class AuthController {
 
     return this.authService.register(
       parsed.data.email,
+      parsed.data.pseudo,
       parsed.data.password,
-      parsed.data.firstName,
-      parsed.data.lastName,
       parsed.data.role,
       {
         userAgent: request.headers["user-agent"],
@@ -136,8 +133,7 @@ export class AuthController {
             id: { type: "string", format: "uuid" },
             email: { type: "string", format: "email" },
             role: { type: "string" },
-            firstName: { type: "string" },
-            lastName: { type: "string" },
+            pseudo: { type: "string" },
           },
         },
       },
@@ -145,25 +141,25 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: "Invalid payload",
+    description: "Payload invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 400 },
         message: { type: "object" },
-        error: { type: "string", example: "Bad Request" },
+        error: { type: "string", example: "Requête invalide" },
       },
     },
   })
   @ApiResponse({
     status: 401,
-    description: "Invalid credentials",
+    description: "Identifiants invalides",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Invalid credentials" },
-        error: { type: "string", example: "Unauthorized" },
+        message: { type: "string", example: "Identifiants invalides" },
+        error: { type: "string", example: "Non autorisé" },
       },
     },
   })
@@ -175,7 +171,7 @@ export class AuthController {
       properties: {
         statusCode: { type: "number", example: 429 },
         message: { type: "string", example: "Trop de tentatives. Reessayez plus tard." },
-        error: { type: "string", example: "Too Many Requests" },
+        error: { type: "string", example: "Trop de requêtes" },
       },
     },
   })
@@ -205,13 +201,13 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: "Missing or invalid token",
+    description: "Jeton manquant ou invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Missing bearer token" },
-        error: { type: "string", example: "Unauthorized" },
+        message: { type: "string", example: "Jeton manquant" },
+        error: { type: "string", example: "Non autorisé" },
       },
     },
   })

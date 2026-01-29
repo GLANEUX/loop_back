@@ -61,7 +61,7 @@ describe("AuthService", () => {
     rateLimitService.hit.mockReturnValueOnce({ count: 5, resetAt: Date.now(), allowed: false });
 
     await expect(
-      service.register("test@loop.local", "password123", "Ada", "Lovelace", UserRole.User, {
+      service.register("test@loop.local", "ada", "password123", UserRole.User, {
         ip: "1.1.1.1",
       }),
     ).rejects.toBeInstanceOf(HttpException);
@@ -72,10 +72,9 @@ describe("AuthService", () => {
     usersService.createUser.mockResolvedValueOnce({
       id: "user-1",
       email: "test@loop.local",
+      pseudo: "ada",
       password: "hashed",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
     } as any);
 
     jest.spyOn(authUtils, "hashPassword").mockReturnValueOnce("hashed");
@@ -89,9 +88,8 @@ describe("AuthService", () => {
 
     const result = await service.register(
       "test@loop.local",
+      "ada",
       "password123",
-      "Ada",
-      "Lovelace",
       UserRole.User,
       {
         ip: "1.1.1.1",
@@ -102,16 +100,14 @@ describe("AuthService", () => {
     expect(result.user).toEqual({
       id: "user-1",
       email: "test@loop.local",
+      pseudo: "ada",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
     });
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.createUser).toHaveBeenCalledWith(
       "test@loop.local",
+      "ada",
       "hashed",
-      "Ada",
-      "Lovelace",
       UserRole.User,
     );
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -145,10 +141,9 @@ describe("AuthService", () => {
     usersService.findByEmail.mockResolvedValueOnce({
       id: "user-1",
       email: "test@loop.local",
+      pseudo: "ada",
       password: "hashed",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
     } as any);
     jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(false);
 
@@ -165,10 +160,9 @@ describe("AuthService", () => {
     usersService.findByEmail.mockResolvedValueOnce({
       id: "user-1",
       email: "test@loop.local",
+      pseudo: "ada",
       password: "hashed",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
     } as any);
     jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(true);
     jest.spyOn(authUtils, "generateSessionToken").mockReturnValueOnce("raw-token");

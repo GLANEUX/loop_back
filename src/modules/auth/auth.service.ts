@@ -27,9 +27,8 @@ export class AuthService {
 
   async register(
     email: string,
+    pseudo: string,
     password: string,
-    firstName: string,
-    lastName: string,
     role: UserRole,
     context: AuthContext,
   ) {
@@ -44,13 +43,12 @@ export class AuthService {
     }
 
     const passwordHash = hashPassword(password);
-    const user = await this.usersService.createUser(email, passwordHash, firstName, lastName, role);
+    const user = await this.usersService.createUser(email, pseudo, passwordHash, role);
     return this.createSession(
       user.id,
       user.email,
+      user.pseudo,
       user.role,
-      user.firstName,
-      user.lastName,
       context,
     );
   }
@@ -78,13 +76,13 @@ export class AuthService {
     if (!user?.password) {
       this.rateLimitService.hit(ipKey, 10, 60_000);
       this.rateLimitService.hit(ipEmailKey, 5, 60_000);
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException("Identifiants invalides");
     }
 
     if (!verifyPassword(password, user.password)) {
       this.rateLimitService.hit(ipKey, 10, 60_000);
       this.rateLimitService.hit(ipEmailKey, 5, 60_000);
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException("Identifiants invalides");
     }
 
     this.rateLimitService.reset(ipKey);
@@ -93,9 +91,8 @@ export class AuthService {
     return this.createSession(
       user.id,
       user.email,
+      user.pseudo,
       user.role,
-      user.firstName,
-      user.lastName,
       context,
     );
   }
@@ -117,8 +114,7 @@ export class AuthService {
         id: session.user.id,
         email: session.user.email,
         role: session.user.role,
-        firstName: session.user.firstName,
-        lastName: session.user.lastName,
+        pseudo: session.user.pseudo,
       },
       expiresAt: session.expiresAt,
     };
@@ -131,9 +127,8 @@ export class AuthService {
   private async createSession(
     userId: string,
     email: string,
+    pseudo: string,
     role: UserRole,
-    firstName: string,
-    lastName: string,
     context: AuthContext,
   ) {
     const rawToken = generateSessionToken();
@@ -157,9 +152,8 @@ export class AuthService {
       user: {
         id: userId,
         email,
+        pseudo,
         role,
-        firstName,
-        lastName,
       },
     };
   }

@@ -7,18 +7,23 @@ import {
   Get,
   Patch,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
 import type { Request } from "express";
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import z from "zod";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import { AuthGuard } from "@modules/auth/auth.guard";
 import { UserRole } from "./user-role.enum";
 import { InstrumentLevel } from "./profile.enums";
@@ -26,16 +31,35 @@ import { UsersService } from "./users.service";
 
 const profileUpdateSchema = z
   .object({
-    displayName: z.string().trim().min(1).max(120).optional(),
-    bio: z.string().trim().max(1000).optional(),
-    avatarUrl: z.string().trim().url().max(512).optional(),
+    firstName: z.string().trim().min(1, "Prenom requis.").max(120, "Prenom trop long.").optional(),
+    lastName: z.string().trim().min(1, "Nom requis.").max(120, "Nom trop long.").optional(),
+    phoneNumber: z
+      .string()
+      .trim()
+      .min(3, "Numero de telephone trop court.")
+      .max(32, "Numero de telephone trop long.")
+      .optional(),
+    birthDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date de naissance invalide (YYYY-MM-DD).")
+      .optional(),
+    gender: z.string().trim().min(1, "Genre requis.").max(32, "Genre trop long.").optional(),
+    bio: z.string().trim().max(1000, "Bio trop longue.").optional(),
     isPublic: z.boolean().optional(),
-    genres: z.array(z.string().trim().min(1).max(120)).optional(),
+    genres: z
+      .array(z.string().trim().min(1, "Genre requis.").max(120, "Genre trop long."))
+      .optional(),
     instruments: z
       .array(
         z.object({
-          instrument: z.string().trim().min(1).max(120),
-          level: z.nativeEnum(InstrumentLevel),
+          instrument: z
+            .string()
+            .trim()
+            .min(1, "Instrument requis.")
+            .max(120, "Instrument trop long."),
+          level: z.nativeEnum(InstrumentLevel, {
+            error: "Niveau d'instrument invalide.",
+          }),
         }),
       )
       .optional(),
@@ -60,13 +84,13 @@ export class UsersController {
   })
   @ApiResponse({
     status: 401,
-    description: "Missing or invalid token",
+    description: "Jeton manquant ou invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Missing bearer token" },
-        error: { type: "string", example: "Unauthorized" },
+        message: { type: "string", example: "Jeton manquant" },
+        error: { type: "string", example: "Non autorisé" },
       },
     },
   })
@@ -88,17 +112,20 @@ export class UsersController {
         id: { type: "string", format: "uuid" },
         email: { type: "string", format: "email" },
         role: { type: "string" },
-        firstName: { type: "string" },
-        lastName: { type: "string" },
+        pseudo: { type: "string" },
         profile: {
           type: "object",
           nullable: true,
           properties: {
             id: { type: "string", format: "uuid" },
-            displayName: { type: "string" },
+            firstName: { type: "string", nullable: true },
+            lastName: { type: "string", nullable: true },
+            phoneNumber: { type: "string", nullable: true },
+            birthDate: { type: "string", format: "date", nullable: true },
+            gender: { type: "string", nullable: true },
             bio: { type: "string", nullable: true },
-            avatarUrl: { type: "string", nullable: true },
             isPublic: { type: "boolean" },
+            hasAvatar: { type: "boolean" },
             genres: {
               type: "array",
               items: { type: "string" },
@@ -122,13 +149,13 @@ export class UsersController {
   })
   @ApiResponse({
     status: 401,
-    description: "Missing or invalid token",
+    description: "Jeton manquant ou invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Missing bearer token" },
-        error: { type: "string", example: "Unauthorized" },
+        message: { type: "string", example: "Jeton manquant" },
+        error: { type: "string", example: "Non autorisé" },
       },
     },
   })
@@ -147,8 +174,7 @@ export class UsersController {
       id: user.id,
       email: user.email,
       role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      pseudo: user.pseudo,
     } as const;
 
     if (user.role === UserRole.Admin) {
@@ -170,10 +196,14 @@ export class UsersController {
       properties: {
         id: { type: "string", format: "uuid" },
         userId: { type: "string", format: "uuid" },
-        displayName: { type: "string" },
+        firstName: { type: "string", nullable: true },
+        lastName: { type: "string", nullable: true },
+        phoneNumber: { type: "string", nullable: true },
+        birthDate: { type: "string", format: "date", nullable: true },
+        gender: { type: "string", nullable: true },
         bio: { type: "string", nullable: true },
-        avatarUrl: { type: "string", nullable: true },
         isPublic: { type: "boolean" },
+        hasAvatar: { type: "boolean" },
         genres: {
           type: "array",
           items: { type: "string" },
@@ -195,19 +225,19 @@ export class UsersController {
   })
   @ApiResponse({
     status: 401,
-    description: "Missing or invalid token",
+    description: "Jeton manquant ou invalide",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Missing bearer token" },
-        error: { type: "string", example: "Unauthorized" },
+        message: { type: "string", example: "Jeton manquant" },
+        error: { type: "string", example: "Non autorisé" },
       },
     },
   })
   @ApiResponse({
     status: 403,
-    description: "Admin accounts do not have a profile",
+    description: "Les admins n'ont pas de profil utilisateur",
   })
   @Get("me/profile")
   async getMyProfile(@Req() request: Request) {
@@ -228,10 +258,14 @@ export class UsersController {
         properties: {
           id: { type: "string", format: "uuid" },
           userId: { type: "string", format: "uuid" },
-          displayName: { type: "string" },
+          firstName: { type: "string", nullable: true },
+          lastName: { type: "string", nullable: true },
+          phoneNumber: { type: "string", nullable: true },
+          birthDate: { type: "string", format: "date", nullable: true },
+          gender: { type: "string", nullable: true },
           bio: { type: "string", nullable: true },
-          avatarUrl: { type: "string", nullable: true },
           isPublic: { type: "boolean" },
+          hasAvatar: { type: "boolean" },
           genres: {
             type: "array",
             items: { type: "string" },
@@ -254,12 +288,12 @@ export class UsersController {
   })
   @ApiResponse({
     status: 403,
-    description: "Admin only",
+    description: "Admins uniquement",
   })
   @Get("profiles")
   async listProfiles(@Req() request: Request) {
     if (request.user?.role !== UserRole.Admin) {
-      throw new ForbiddenException("Admin only");
+      throw new ForbiddenException("Admins uniquement");
     }
     return this.usersService.listProfiles();
   }
@@ -271,9 +305,12 @@ export class UsersController {
     schema: {
       type: "object",
       properties: {
-        displayName: { type: "string" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
+        phoneNumber: { type: "string" },
+        birthDate: { type: "string", format: "date" },
+        gender: { type: "string" },
         bio: { type: "string" },
-        avatarUrl: { type: "string", format: "uri" },
         isPublic: { type: "boolean" },
         genres: {
           type: "array",
@@ -298,10 +335,14 @@ export class UsersController {
       properties: {
         id: { type: "string", format: "uuid" },
         userId: { type: "string", format: "uuid" },
-        displayName: { type: "string" },
+        firstName: { type: "string", nullable: true },
+        lastName: { type: "string", nullable: true },
+        phoneNumber: { type: "string", nullable: true },
+        birthDate: { type: "string", format: "date", nullable: true },
+        gender: { type: "string", nullable: true },
         bio: { type: "string", nullable: true },
-        avatarUrl: { type: "string", nullable: true },
         isPublic: { type: "boolean" },
+        hasAvatar: { type: "boolean" },
         genres: {
           type: "array",
           items: { type: "string" },
@@ -323,11 +364,11 @@ export class UsersController {
   })
   @ApiResponse({
     status: 400,
-    description: "Invalid payload",
+    description: "Payload invalide",
   })
   @ApiResponse({
     status: 403,
-    description: "Admin accounts do not have a profile",
+    description: "Les admins n'ont pas de profil utilisateur",
   })
   @Patch("me/profile")
   async updateMyProfile(@Body() body: unknown, @Req() request: Request) {
@@ -341,5 +382,53 @@ export class UsersController {
     }
 
     return this.usersService.updateProfileForUser(request.user.id, parsed.data);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update current user's avatar (non-admin only)" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        avatar: { type: "string", format: "binary" },
+      },
+      required: ["avatar"],
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Fichier d'avatar manquant",
+  })
+  @ApiResponse({
+    status: 403,
+    description: "Les admins n'ont pas de profil utilisateur",
+  })
+  @Patch("me/avatar")
+  @UseInterceptors(
+    FileInterceptor("avatar", {
+      storage: memoryStorage(),
+    }),
+  )
+  async updateMyAvatar(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Req() request: Request,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException("Fichier d'avatar manquant");
+    }
+    if (!request.user?.id) {
+      return null;
+    }
+    return this.usersService.updateAvatarForUser(request.user.id, file.buffer);
   }
 }

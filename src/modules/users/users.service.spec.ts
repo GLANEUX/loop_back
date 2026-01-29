@@ -105,7 +105,7 @@ describe("UsersService", () => {
     userRepo.findOne.mockResolvedValueOnce({ id: "user-1" } as User);
 
     await expect(
-      service.createUser("test@loop.local", "hashed", "Ada", "Lovelace"),
+      service.createUser("test@loop.local", "ada", "hashed"),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -156,27 +156,24 @@ describe("UsersService", () => {
     userRepo.save.mockResolvedValueOnce({
       id: "user-1",
       email: "test@loop.local",
-      firstName: "Ada",
-      lastName: "Lovelace",
+      pseudo: "ada",
       role: UserRole.User,
     } as User);
     profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
     profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
 
-    await service.createUser("  TEST@Loop.local ", "hashed", " Ada ", " Lovelace ");
+    await service.createUser("  TEST@Loop.local ", " ada ", "hashed");
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(userRepo.create).toHaveBeenCalledWith({
       email: "test@loop.local",
+      pseudo: "ada",
       password: "hashed",
-      firstName: "Ada",
-      lastName: "Lovelace",
       role: UserRole.User,
     });
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileRepo.create).toHaveBeenCalledWith({
       userId: "user-1",
-      displayName: "Ada Lovelace",
       isPublic: true,
     });
   });
@@ -187,12 +184,11 @@ describe("UsersService", () => {
     userRepo.save.mockResolvedValueOnce({
       id: "admin-1",
       email: "admin@loop.local",
-      firstName: "Admin",
-      lastName: "User",
+      pseudo: "admin",
       role: UserRole.Admin,
     } as User);
 
-    await service.createUser("admin@loop.local", "hashed", "Admin", "User", UserRole.Admin);
+    await service.createUser("admin@loop.local", "admin", "hashed", UserRole.Admin);
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileRepo.create).not.toHaveBeenCalled();
@@ -238,8 +234,7 @@ describe("UsersService", () => {
     userRepo.findOne.mockResolvedValueOnce({
       id: "user-1",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
+      pseudo: "ada",
       profile: null,
     } as User);
     profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
@@ -276,7 +271,7 @@ describe("UsersService", () => {
       role: UserRole.User,
       profile: { id: "profile-1" },
     } as User);
-    profileRepo.merge.mockReturnValueOnce({ id: "profile-1", displayName: "New Name" } as Profile);
+    profileRepo.merge.mockReturnValueOnce({ id: "profile-1", firstName: "Ada" } as Profile);
     profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
 
     genreRepo.find.mockResolvedValueOnce([{ id: "genre-1", name: "Rock" } as GenreEntity]);
@@ -302,7 +297,7 @@ describe("UsersService", () => {
     } as Profile);
 
     const result = await service.updateProfileForUser("user-1", {
-      displayName: "New Name",
+      firstName: "Ada",
       genres: ["Rock", "Jazz", "  Rock "],
       instruments: [
         { instrument: "Guitar", level: InstrumentLevel.Advanced },
@@ -327,20 +322,18 @@ describe("UsersService", () => {
     userRepo.findOne.mockResolvedValueOnce({
       id: "user-1",
       role: UserRole.User,
-      firstName: "Ada",
-      lastName: "Lovelace",
+      pseudo: "ada",
       profile: null,
     } as User);
     profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
     profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
     profileRepo.findOne.mockResolvedValueOnce({ id: "profile-1" } as Profile);
 
-    const result = await service.updateProfileForUser("user-1", { displayName: "Ada" });
+    const result = await service.updateProfileForUser("user-1", { firstName: "Ada" });
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileRepo.create).toHaveBeenCalledWith({
       userId: "user-1",
-      displayName: "Ada Lovelace",
       isPublic: true,
     });
     expect(result).toEqual({ id: "profile-1", genres: [], instruments: [] });

@@ -32,7 +32,7 @@ describe("AuthGuard", () => {
     const authService = {
       validateSessionToken: jest.fn().mockResolvedValue({
         sessionId: "session-1",
-        user: { id: "user-1", email: "test@loop.local", role: "user" },
+        user: { id: "user-1", email: "test@loop.local", pseudo: "ada", role: "user" },
         expiresAt: new Date(),
       }),
     } as unknown as AuthService;
@@ -48,7 +48,7 @@ describe("AuthGuard", () => {
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
-    expect(request.user).toEqual({ id: "user-1", email: "test@loop.local", role: "user" });
+    expect(request.user).toEqual({ id: "user-1", email: "test@loop.local", pseudo: "ada", role: "user" });
     expect(request.sessionId).toBe("session-1");
   });
 });
