@@ -337,6 +337,27 @@ export class UsersService {
     return { ok: true };
   }
 
+  async getAvatarForUser(userId: string) {
+    const user = await this.requireUserWithRole(userId);
+    if (user.role === UserRole.Admin) {
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
+    }
+
+    if (!user.profile) {
+      return null;
+    }
+
+    const profile = await this.profileRepo.findOne({
+      where: { id: user.profile.id },
+    });
+
+    if (!profile?.avatar) {
+      return null;
+    }
+
+    return profile.avatar;
+  }
+
   async listGenres() {
     return this.genreRepo.find({ order: { name: "ASC" } });
   }

@@ -5,19 +5,22 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  NotFoundException,
   Patch,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -430,5 +433,30 @@ export class UsersController {
       return null;
     }
     return this.usersService.updateAvatarForUser(request.user.id, file.buffer);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get current user's avatar (non-admin only)" })
+  @ApiProduces("application/octet-stream")
+  @ApiResponse({
+    status: 404,
+    description: "Avatar introuvable",
+  })
+  @ApiResponse({
+    status: 403,
+    description: "Les admins n'ont pas de profil utilisateur",
+  })
+  @Get("me/avatar")
+  async getMyAvatar(@Req() request: Request, @Res() res: Response) {
+    if (!request.user?.id) {
+      return res.status(404).send();
+    }
+    const avatar = await this.usersService.getAvatarForUser(request.user.id);
+    if (!avatar) {
+      throw new NotFoundException("Avatar introuvable");
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    return res.send(avatar);
   }
 }
