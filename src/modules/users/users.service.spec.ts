@@ -104,9 +104,9 @@ describe("UsersService", () => {
   it("throws conflict when email already exists", async () => {
     userRepo.findOne.mockResolvedValueOnce({ id: "user-1" } as User);
 
-    await expect(
-      service.createUser("test@loop.local", "ada", "hashed"),
-    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.createUser("test@loop.local", "ada", "hashed")).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   it("finds a user by id", async () => {

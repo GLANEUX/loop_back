@@ -86,15 +86,9 @@ describe("AuthService", () => {
     } as Session);
     sessionRepo.save.mockResolvedValueOnce({} as Session);
 
-    const result = await service.register(
-      "test@loop.local",
-      "ada",
-      "password123",
-      UserRole.User,
-      {
-        ip: "1.1.1.1",
-      },
-    );
+    const result = await service.register("test@loop.local", "ada", "password123", UserRole.User, {
+      ip: "1.1.1.1",
+    });
 
     expect(result.accessToken).toBe("raw-token");
     expect(result.user).toEqual({

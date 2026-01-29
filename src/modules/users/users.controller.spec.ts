@@ -97,9 +97,9 @@ describe("UsersController", () => {
   it("validates profile update payloads", async () => {
     const request = { user: { id: "user-1" } } as Request;
 
-    await expect(controller.updateMyProfile({ birthDate: "2024-20-01" }, request)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      controller.updateMyProfile({ birthDate: "2024-20-01" }, request),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("returns null when getting profile without a user", async () => {
@@ -145,7 +145,10 @@ describe("UsersController", () => {
   it("rejects non-admin access to list profiles", async () => {
     const request = { user: { id: "user-1", role: UserRole.User } } as Request;
 
-    await expect(controller.listProfiles(request)).rejects.toHaveProperty("message", "Admins uniquement");
+    await expect(controller.listProfiles(request)).rejects.toHaveProperty(
+      "message",
+      "Admins uniquement",
+    );
   });
 
   it("lists profiles for admins", async () => {

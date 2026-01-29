@@ -44,13 +44,7 @@ export class AuthService {
 
     const passwordHash = hashPassword(password);
     const user = await this.usersService.createUser(email, pseudo, passwordHash, role);
-    return this.createSession(
-      user.id,
-      user.email,
-      user.pseudo,
-      user.role,
-      context,
-    );
+    return this.createSession(user.id, user.email, user.pseudo, user.role, context);
   }
 
   async login(email: string, password: string, context: AuthContext) {
@@ -88,13 +82,7 @@ export class AuthService {
     this.rateLimitService.reset(ipKey);
     this.rateLimitService.reset(ipEmailKey);
 
-    return this.createSession(
-      user.id,
-      user.email,
-      user.pseudo,
-      user.role,
-      context,
-    );
+    return this.createSession(user.id, user.email, user.pseudo, user.role, context);
   }
 
   async validateSessionToken(token: string): Promise<AuthSession | null> {

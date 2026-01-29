@@ -48,7 +48,12 @@ describe("AuthGuard", () => {
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
-    expect(request.user).toEqual({ id: "user-1", email: "test@loop.local", pseudo: "ada", role: "user" });
+    expect(request.user).toEqual({
+      id: "user-1",
+      email: "test@loop.local",
+      pseudo: "ada",
+      role: "user",
+    });
     expect(request.sessionId).toBe("session-1");
   });
 });
