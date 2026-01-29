@@ -7,9 +7,8 @@ import { RateLimitService } from "../src/modules/auth/rate-limit.service";
 
 const registerPayload = (email: string) => ({
   email,
+  pseudo: email.split("@")[0],
   password: "Test1234!",
-  firstName: "Ada",
-  lastName: "Lovelace",
 });
 
 describe("Users (e2e)", () => {
@@ -57,7 +56,7 @@ describe("Users (e2e)", () => {
       .expect(200);
 
     expect(meRes.body.email).toBe("me@loop.local");
-    expect(meRes.body.firstName).toBe("Ada");
+    expect(meRes.body.pseudo).toBe("me");
     expect(meRes.body.profile).toBeDefined();
   });
 
@@ -85,6 +84,11 @@ describe("Users (e2e)", () => {
       .patch("/user/me/profile")
       .set("Authorization", `Bearer ${token}`)
       .send({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        phoneNumber: "+33612345678",
+        birthDate: "1990-12-10",
+        gender: "female",
         genres: ["Rock", "Jazz", " Rock "],
         instruments: [
           { instrument: "Guitar", level: "Intermediate" },
@@ -98,6 +102,11 @@ describe("Users (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
+    expect(profileRes.body.firstName).toBe("Ada");
+    expect(profileRes.body.lastName).toBe("Lovelace");
+    expect(profileRes.body.phoneNumber).toBe("+33612345678");
+    expect(profileRes.body.birthDate).toBe("1990-12-10");
+    expect(profileRes.body.gender).toBe("female");
     expect(profileRes.body.genres).toEqual(["Rock", "Jazz"]);
     expect(profileRes.body.instruments).toEqual([
       { instrument: "Guitar", level: "Intermediate" },
@@ -143,7 +152,7 @@ describe("Users (e2e)", () => {
 
     expect(Array.isArray(profilesRes.body)).toBe(true);
     expect(profilesRes.body.length).toBe(1);
-    expect(profilesRes.body[0].displayName).toBe("Ada Lovelace");
+    expect(profilesRes.body[0].id).toBeDefined();
   });
 
   it("soft deletes current user", async () => {

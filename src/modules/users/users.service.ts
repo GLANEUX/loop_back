@@ -38,6 +38,12 @@ export class UsersService {
     });
   }
 
+  async findByPseudo(pseudo: string) {
+    return this.userRepo.findOne({
+      where: { pseudo: pseudo.trim() },
+    });
+  }
+
   async findById(id: string) {
     return this.userRepo.findOne({ where: { id } });
   }
@@ -46,12 +52,8 @@ export class UsersService {
     return email.trim().toLowerCase();
   }
 
-  private normalizeName(value: string) {
+  private normalizePseudo(value: string) {
     return value.trim();
-  }
-
-  private buildDisplayName(firstName: string, lastName: string) {
-    return `${firstName} ${lastName}`.trim();
   }
 
   private async loadProfileWithRelations(profileId: string) {
@@ -65,9 +67,10 @@ export class UsersService {
   }
 
   private formatProfile(profile: Profile) {
-    const { genres, instruments, ...rest } = profile;
+    const { genres, instruments, avatar, ...rest } = profile;
     return {
       ...rest,
+      hasAvatar: Boolean(avatar),
       genres:
         genres
           ?.map((profileGenre) => profileGenre.genre?.name)
@@ -113,25 +116,26 @@ export class UsersService {
 
   async createUser(
     email: string,
+    pseudo: string,
     password: string,
-    firstName: string,
-    lastName: string,
     role: UserRole = UserRole.User,
   ) {
     const normalizedEmail = this.normalizeEmail(email);
     const existing = await this.findByEmail(normalizedEmail);
     if (existing) {
-      throw new ConflictException("Email already in use");
+      throw new ConflictException("Email déjà utilisé");
     }
 
-    const normalizedFirstName = this.normalizeName(firstName);
-    const normalizedLastName = this.normalizeName(lastName);
+    const normalizedPseudo = this.normalizePseudo(pseudo);
+    const existingPseudo = await this.findByPseudo(normalizedPseudo);
+    if (existingPseudo) {
+      throw new ConflictException("Pseudo déjà utilisé");
+    }
 
     const user = this.userRepo.create({
       email: normalizedEmail,
+      pseudo: normalizedPseudo,
       password,
-      firstName: normalizedFirstName,
-      lastName: normalizedLastName,
       role,
     });
 
@@ -140,7 +144,6 @@ export class UsersService {
     if (savedUser.role === UserRole.User) {
       const profile = this.profileRepo.create({
         userId: savedUser.id,
-        displayName: this.buildDisplayName(savedUser.firstName, savedUser.lastName),
         isPublic: true,
       });
       await this.profileRepo.save(profile);
@@ -155,7 +158,7 @@ export class UsersService {
       relations: { profile: true },
     });
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new NotFoundException("Utilisateur introuvable");
     }
     return user;
   }
@@ -163,7 +166,7 @@ export class UsersService {
   async getProfileForUser(userId: string) {
     const user = await this.requireUserWithRole(userId);
     if (user.role === UserRole.Admin) {
-      throw new ForbiddenException("Admins do not have a user profile");
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
     }
 
     if (user.profile) {
@@ -173,7 +176,6 @@ export class UsersService {
 
     const profile = this.profileRepo.create({
       userId: user.id,
-      displayName: this.buildDisplayName(user.firstName, user.lastName),
       isPublic: true,
     });
     const saved = await this.profileRepo.save(profile);
@@ -183,14 +185,19 @@ export class UsersService {
 
   async updateProfileForUser(
     userId: string,
-    updates: Partial<Pick<Profile, "displayName" | "bio" | "avatarUrl" | "isPublic">> & {
+    updates: Partial<
+      Pick<
+        Profile,
+        "bio" | "isPublic" | "firstName" | "lastName" | "phoneNumber" | "birthDate" | "gender"
+      >
+    > & {
       genres?: string[];
       instruments?: { instrument: string; level: InstrumentLevel }[];
     },
   ) {
     const user = await this.requireUserWithRole(userId);
     if (user.role === UserRole.Admin) {
-      throw new ForbiddenException("Admins do not have a user profile");
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
     }
 
     let profileEntity: Profile;
@@ -199,7 +206,6 @@ export class UsersService {
     } else {
       const created = this.profileRepo.create({
         userId: user.id,
-        displayName: this.buildDisplayName(user.firstName, user.lastName),
         isPublic: true,
       });
       profileEntity = await this.profileRepo.save(created);
@@ -307,6 +313,57 @@ export class UsersService {
       },
     });
     return profiles.map((profile) => this.formatProfile(profile));
+  }
+
+  async updateAvatarForUser(userId: string, avatar: Buffer | null) {
+    const user = await this.requireUserWithRole(userId);
+    if (user.role === UserRole.Admin) {
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
+    }
+
+    let profileEntity: Profile;
+    if (user.profile) {
+      profileEntity = user.profile;
+    } else {
+      const created = this.profileRepo.create({
+        userId: user.id,
+        isPublic: true,
+      });
+      profileEntity = await this.profileRepo.save(created);
+    }
+
+    profileEntity.avatar = avatar;
+    await this.profileRepo.save(profileEntity);
+    return { ok: true };
+  }
+
+  async getAvatarForUser(userId: string) {
+    const user = await this.requireUserWithRole(userId);
+    if (user.role === UserRole.Admin) {
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
+    }
+
+    if (!user.profile) {
+      return null;
+    }
+
+    const profile = await this.profileRepo.findOne({
+      where: { id: user.profile.id },
+    });
+
+    if (!profile?.avatar) {
+      return null;
+    }
+
+    return profile.avatar;
+  }
+
+  async listGenres() {
+    return this.genreRepo.find({ order: { name: "ASC" } });
+  }
+
+  async listInstruments() {
+    return this.instrumentRepo.find({ order: { name: "ASC" } });
   }
 
   async softDeleteById(id: string) {

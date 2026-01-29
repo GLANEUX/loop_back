@@ -39,16 +39,15 @@ describe("AuthController", () => {
     const request = { headers: { "user-agent": "jest" }, ip: "1.1.1.1" } as Request;
 
     const result = await controller.register(
-      { email: "test@loop.local", password: "Test1234!", firstName: "Ada", lastName: "Lovelace" },
+      { email: "test@loop.local", pseudo: "ada", password: "Test1234!" },
       request,
     );
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(authService.register).toHaveBeenCalledWith(
       "test@loop.local",
+      "ada",
       "Test1234!",
-      "Ada",
-      "Lovelace",
       "user",
       {
         userAgent: "jest",

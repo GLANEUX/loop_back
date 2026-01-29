@@ -7,7 +7,6 @@ import { env } from "@config/configuration";
 import { Request, Response, NextFunction } from "express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
-import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
 async function bootstrap() {
   const logger = WinstonModule.createLogger({
@@ -21,8 +20,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger });
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
-  app.useGlobalInterceptors(new (AnyFilesInterceptor())());
-
   app.use((req: Request, _res: Response, next: NextFunction) => {
     req.requestId = uuidv4();
     next();

@@ -7,9 +7,8 @@ import { RateLimitService } from "../src/modules/auth/rate-limit.service";
 
 const registerPayload = (email: string) => ({
   email,
+  pseudo: email.split("@")[0],
   password: "Test1234!",
-  firstName: "Ada",
-  lastName: "Lovelace",
 });
 
 describe("Auth (e2e)", () => {
@@ -88,7 +87,6 @@ describe("Auth (e2e)", () => {
         .post("/auth/register")
         .send({
           ...registerPayload(`rl${i}@loop.local`),
-          firstName: `Ada${i}`,
         })
         .expect(201);
     }

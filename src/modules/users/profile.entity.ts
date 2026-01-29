@@ -25,14 +25,26 @@ export class Profile {
   @JoinColumn({ name: "user_id" })
   user!: User;
 
-  @Column({ type: "varchar", length: 120, name: "display_name" })
-  displayName!: string;
+  @Column({ type: "varchar", length: 120, name: "first_name", nullable: true })
+  firstName?: string | null;
+
+  @Column({ type: "varchar", length: 120, name: "last_name", nullable: true })
+  lastName?: string | null;
+
+  @Column({ type: "varchar", length: 32, name: "phone_number", nullable: true })
+  phoneNumber?: string | null;
+
+  @Column({ type: "date", name: "birth_date", nullable: true })
+  birthDate?: string | null;
+
+  @Column({ type: "varchar", length: 32, nullable: true })
+  gender?: string | null;
 
   @Column({ type: "text", nullable: true })
   bio?: string | null;
 
-  @Column({ type: "varchar", length: 512, name: "avatar_url", nullable: true })
-  avatarUrl?: string | null;
+  @Column({ type: "bytea", name: "avatar", nullable: true })
+  avatar?: Buffer | null;
 
   @Column({ type: "boolean", name: "is_public", default: true })
   isPublic!: boolean;

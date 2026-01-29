@@ -12,12 +12,12 @@ export class AuthGuard implements CanActivate {
     const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 
     if (!token) {
-      throw new UnauthorizedException("Missing bearer token");
+      throw new UnauthorizedException("Jeton manquant");
     }
 
     const session = await this.authService.validateSessionToken(token);
     if (!session) {
-      throw new UnauthorizedException("Invalid or expired token");
+      throw new UnauthorizedException("Jeton invalide ou expiré");
     }
 
     request.user = session.user;

@@ -48,7 +48,7 @@ describe("AllExceptionsFilter", () => {
       expect.any(Object),
       expect.objectContaining({
         statusCode: HttpStatus.BAD_REQUEST,
-        error: "Bad Request",
+        error: "Requête invalide",
         message: {
           issues: [{ path: "name", message: expect.any(String) }],
         },
@@ -72,7 +72,7 @@ describe("AllExceptionsFilter", () => {
       expect.objectContaining({
         statusCode: HttpStatus.FORBIDDEN,
         message: "Nope",
-        error: "Forbidden",
+        error: "Interdit",
       }),
       HttpStatus.FORBIDDEN,
     );
@@ -90,7 +90,7 @@ describe("AllExceptionsFilter", () => {
       expect.objectContaining({
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         message: { foo: "bar" },
-        error: "Unprocessable Entity",
+        error: "Entité non traitable",
       }),
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
@@ -107,8 +107,8 @@ describe("AllExceptionsFilter", () => {
       expect.any(Object),
       expect.objectContaining({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: "Internal server error",
-        error: "Internal Server Error",
+        message: "Erreur interne du serveur",
+        error: "Erreur interne du serveur",
         requestId: undefined,
       }),
       HttpStatus.INTERNAL_SERVER_ERROR,
