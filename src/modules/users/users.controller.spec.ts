@@ -98,7 +98,7 @@ describe("UsersController", () => {
     const request = { user: { id: "user-1" } } as Request;
 
     await expect(
-      controller.updateMyProfile({ birthDate: "2024-20-01" }, request),
+      controller.updateMyProfile({ birthDate: "invalid-date" }, request),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

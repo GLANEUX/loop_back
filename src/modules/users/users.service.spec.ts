@@ -144,6 +144,7 @@ describe("UsersService", () => {
       id: "user-1",
       profile: {
         id: "profile-1",
+        hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
       },
@@ -225,6 +226,7 @@ describe("UsersService", () => {
 
     expect(result).toEqual({
       id: "profile-1",
+      hasAvatar: false,
       genres: ["Jazz"],
       instruments: [{ instrument: "Piano", level: InstrumentLevel.Advanced }],
     });
@@ -249,6 +251,7 @@ describe("UsersService", () => {
 
     expect(result).toEqual({
       id: "profile-1",
+      hasAvatar: false,
       genres: ["Rock"],
       instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
     });
@@ -313,6 +316,7 @@ describe("UsersService", () => {
     });
     expect(result).toEqual({
       id: "profile-1",
+      hasAvatar: false,
       genres: ["Rock"],
       instruments: [{ instrument: "Guitar", level: InstrumentLevel.Advanced }],
     });
@@ -336,7 +340,7 @@ describe("UsersService", () => {
       userId: "user-1",
       isPublic: true,
     });
-    expect(result).toEqual({ id: "profile-1", genres: [], instruments: [] });
+    expect(result).toEqual({ id: "profile-1", hasAvatar: false, genres: [], instruments: [] });
   });
 
   it("soft deletes a user by id", async () => {
@@ -359,6 +363,7 @@ describe("UsersService", () => {
     expect(result).toEqual([
       {
         id: "profile-1",
+        hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
       },
