@@ -34,11 +34,11 @@ export class AllExceptionsFilter {
 
     const isZodError = exception instanceof ZodError;
     const isHttpException = exception instanceof HttpException;
-    const statusCode = isZodError
+    const statusCode = (isZodError
       ? HttpStatus.BAD_REQUEST
       : isHttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : HttpStatus.INTERNAL_SERVER_ERROR) as HttpStatus;
 
     const normalized = isZodError
       ? { message: this.formatZodError(exception), error: "Requête invalide" }
@@ -104,14 +104,14 @@ export class AllExceptionsFilter {
     return { issues };
   }
 
-  private defaultMessageForStatus(statusCode: number): string {
+  private defaultMessageForStatus(statusCode: HttpStatus): string {
     if (statusCode >= 500) {
       return "Erreur interne du serveur";
     }
     return "La requête a échoué";
   }
 
-  private defaultErrorForStatus(statusCode: number): string {
+  private defaultErrorForStatus(statusCode: HttpStatus): string {
     switch (statusCode) {
       case HttpStatus.BAD_REQUEST:
         return "Requête invalide";
