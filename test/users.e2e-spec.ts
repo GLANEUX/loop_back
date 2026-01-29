@@ -44,7 +44,7 @@ describe("Users (e2e)", () => {
 
     const registerRes = await request(server)
       .post("/auth/register")
-      .send(registerPayload("me@loop.local"))
+      .send(registerPayload("meu@loop.local"))
       .expect(201);
 
     const token = registerRes.body.accessToken;
@@ -55,8 +55,8 @@ describe("Users (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    expect(meRes.body.email).toBe("me@loop.local");
-    expect(meRes.body.pseudo).toBe("me");
+    expect(meRes.body.email).toBe("meu@loop.local");
+    expect(meRes.body.pseudo).toBe("meu");
     expect(meRes.body.profile).toBeDefined();
   });
 
