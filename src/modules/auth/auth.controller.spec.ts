@@ -18,6 +18,7 @@ describe("AuthController", () => {
             register: jest.fn(),
             login: jest.fn(),
             logout: jest.fn(),
+            changePassword: jest.fn(),
           },
         },
       ],
@@ -87,6 +88,32 @@ describe("AuthController", () => {
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(authService.logout).toHaveBeenCalledWith("session-1");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects invalid change password payload", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    await expect(
+      controller.changePassword({ oldPassword: "short", newPassword: "Test1234!" }, request),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("changes password with valid payload", async () => {
+    authService.changePassword.mockResolvedValueOnce({ ok: true } as any);
+    const request = { user: { id: "user-1" } } as Request;
+
+    const result = await controller.changePassword(
+      { oldPassword: "OldPass123!", newPassword: "NewPass123!" },
+      request,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(authService.changePassword).toHaveBeenCalledWith(
+      "user-1",
+      "OldPass123!",
+      "NewPass123!",
+    );
     expect(result).toEqual({ ok: true });
   });
 });

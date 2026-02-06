@@ -369,4 +369,8 @@ export class UsersService {
   async softDeleteById(id: string) {
     await this.userRepo.softDelete(id);
   }
+
+  async updatePasswordById(id: string, password: string) {
+    await this.userRepo.update({ id }, { password });
+  }
 }

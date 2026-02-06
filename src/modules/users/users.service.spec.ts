@@ -31,6 +31,7 @@ describe("UsersService", () => {
             findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             softDelete: jest.fn(),
           },
         },
@@ -347,6 +348,12 @@ describe("UsersService", () => {
     await service.softDeleteById("user-1");
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(userRepo.softDelete).toHaveBeenCalledWith("user-1");
+  });
+
+  it("updates a user's password hash by id", async () => {
+    await service.updatePasswordById("user-1", "new-hash");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { password: "new-hash" });
   });
 
   it("lists profiles", async () => {

@@ -24,6 +24,8 @@ describe("AuthService", () => {
           useValue: {
             createUser: jest.fn(),
             findByEmail: jest.fn(),
+            findById: jest.fn(),
+            updatePasswordById: jest.fn(),
           },
         },
         {
@@ -170,5 +172,32 @@ describe("AuthService", () => {
     expect(result.accessToken).toBe("raw-token");
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(rateLimitService.reset).toHaveBeenCalled();
+  });
+
+  it("rejects password change when old password is invalid", async () => {
+    usersService.findById.mockResolvedValueOnce({
+      id: "user-1",
+      password: "old-hash",
+    } as any);
+    jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(false);
+
+    await expect(
+      service.changePassword("user-1", "WrongPass123!", "NewPass123!"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it("changes password when old password is valid", async () => {
+    usersService.findById.mockResolvedValueOnce({
+      id: "user-1",
+      password: "old-hash",
+    } as any);
+    jest.spyOn(authUtils, "verifyPassword").mockReturnValueOnce(true);
+    jest.spyOn(authUtils, "hashPassword").mockReturnValueOnce("new-hash");
+
+    const result = await service.changePassword("user-1", "OldPass123!", "NewPass123!");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updatePasswordById).toHaveBeenCalledWith("user-1", "new-hash");
+    expect(result).toEqual({ ok: true });
   });
 });

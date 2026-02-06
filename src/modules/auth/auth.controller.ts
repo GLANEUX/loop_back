@@ -1,4 +1,12 @@
-import { BadRequestException, Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from "@nestjs/common";
 import type { Request } from "express";
 import {
   ApiBearerAuth,
@@ -8,7 +16,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { loginSchema, registerSchema } from "./auth.dto";
+import { changePasswordSchema, loginSchema, registerSchema } from "./auth.dto";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
 import z from "zod";
@@ -217,5 +225,66 @@ export class AuthController {
       await this.authService.logout(request.sessionId);
     }
     return { ok: true };
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Change current user's password" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["oldPassword", "newPassword"],
+      properties: {
+        oldPassword: { type: "string", minLength: 8, example: "OldPass123!" },
+        newPassword: { type: "string", minLength: 8, example: "NewPass123!" },
+      },
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Payload invalide",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 400 },
+        message: { type: "object" },
+        error: { type: "string", example: "Requête invalide" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Ancien mot de passe invalide",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 401 },
+        message: { type: "string", example: "Ancien mot de passe invalide" },
+        error: { type: "string", example: "Non autorisé" },
+      },
+    },
+  })
+  @Post("change-password")
+  async changePassword(@Body() body: unknown, @Req() request: Request) {
+    const parsed = changePasswordSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException(z.treeifyError(parsed.error));
+    }
+    if (!request.user?.id) {
+      throw new UnauthorizedException("Jeton manquant");
+    }
+    return this.authService.changePassword(
+      request.user.id,
+      parsed.data.oldPassword,
+      parsed.data.newPassword,
+    );
   }
 }

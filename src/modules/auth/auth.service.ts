@@ -112,6 +112,18 @@ export class AuthService {
     await this.sessionRepo.softDelete(sessionId);
   }
 
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user?.password || !verifyPassword(oldPassword, user.password)) {
+      throw new UnauthorizedException("Ancien mot de passe invalide");
+    }
+
+    const passwordHash = hashPassword(newPassword);
+    await this.usersService.updatePasswordById(userId, passwordHash);
+
+    return { ok: true };
+  }
+
   private async createSession(
     userId: string,
     email: string,
