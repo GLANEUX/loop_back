@@ -356,6 +356,46 @@ describe("UsersService", () => {
     expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { password: "new-hash" });
   });
 
+  it("updates email when it is available", async () => {
+    userRepo.findOne
+      .mockResolvedValueOnce({ id: "user-1", email: "old@loop.local" } as User)
+      .mockResolvedValueOnce(null);
+
+    const result = await service.updateEmailById("user-1", "New@Loop.local");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { email: "new@loop.local" });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("skips update when email is unchanged", async () => {
+    userRepo.findOne.mockResolvedValueOnce({ id: "user-1", email: "same@loop.local" } as User);
+
+    const result = await service.updateEmailById("user-1", "same@loop.local");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(userRepo.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects email updates for missing user", async () => {
+    userRepo.findOne.mockResolvedValueOnce(null);
+
+    await expect(service.updateEmailById("missing", "new@loop.local")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it("rejects email updates when email is already used", async () => {
+    userRepo.findOne
+      .mockResolvedValueOnce({ id: "user-1", email: "old@loop.local" } as User)
+      .mockResolvedValueOnce({ id: "user-2", email: "new@loop.local" } as User);
+
+    await expect(service.updateEmailById("user-1", "new@loop.local")).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
   it("lists profiles", async () => {
     profileRepo.find.mockResolvedValueOnce([
       {

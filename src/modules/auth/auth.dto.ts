@@ -47,6 +47,11 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const changeEmailSchema = z.object({
+  newEmail: z.string().trim().email("Email invalide."),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
