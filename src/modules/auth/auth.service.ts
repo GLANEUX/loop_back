@@ -124,6 +124,10 @@ export class AuthService {
     return { ok: true };
   }
 
+  async changeEmail(userId: string, newEmail: string) {
+    return this.usersService.updateEmailById(userId, newEmail);
+  }
+
   private async createSession(
     userId: string,
     email: string,

@@ -19,6 +19,7 @@ describe("AuthController", () => {
             login: jest.fn(),
             logout: jest.fn(),
             changePassword: jest.fn(),
+            changeEmail: jest.fn(),
           },
         },
       ],
@@ -114,6 +115,25 @@ describe("AuthController", () => {
       "OldPass123!",
       "NewPass123!",
     );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects invalid change email payload", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    await expect(controller.changeEmail({ newEmail: "nope" }, request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it("changes email with valid payload", async () => {
+    authService.changeEmail.mockResolvedValueOnce({ ok: true } as any);
+    const request = { user: { id: "user-1" } } as Request;
+
+    const result = await controller.changeEmail({ newEmail: "new@loop.local" }, request);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(authService.changeEmail).toHaveBeenCalledWith("user-1", "new@loop.local");
     expect(result).toEqual({ ok: true });
   });
 });

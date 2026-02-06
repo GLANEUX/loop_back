@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
@@ -16,7 +17,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { changePasswordSchema, loginSchema, registerSchema } from "./auth.dto";
+import { changeEmailSchema, changePasswordSchema, loginSchema, registerSchema } from "./auth.dto";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
 import z from "zod";
@@ -286,5 +287,61 @@ export class AuthController {
       parsed.data.oldPassword,
       parsed.data.newPassword,
     );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Change current user's email" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["newEmail"],
+      properties: {
+        newEmail: { type: "string", format: "email", example: "new@loop.local" },
+      },
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Payload invalide",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 400 },
+        message: { type: "object" },
+        error: { type: "string", example: "Requête invalide" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: "Email déjà utilisé",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 409 },
+        message: { type: "string", example: "Email déjà utilisé" },
+        error: { type: "string", example: "Conflit" },
+      },
+    },
+  })
+  @Patch("change-email")
+  async changeEmail(@Body() body: unknown, @Req() request: Request) {
+    const parsed = changeEmailSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException(z.treeifyError(parsed.error));
+    }
+    if (!request.user?.id) {
+      throw new UnauthorizedException("Jeton manquant");
+    }
+    return this.authService.changeEmail(request.user.id, parsed.data.newEmail);
   }
 }

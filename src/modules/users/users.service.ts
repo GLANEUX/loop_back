@@ -373,4 +373,23 @@ export class UsersService {
   async updatePasswordById(id: string, password: string) {
     await this.userRepo.update({ id }, { password });
   }
+
+  async updateEmailById(id: string, email: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    if (user.email === normalizedEmail) {
+      return { ok: true };
+    }
+
+    const existing = await this.findByEmail(normalizedEmail);
+    if (existing && existing.id !== id) {
+      throw new ConflictException("Email déjà utilisé");
+    }
+
+    await this.userRepo.update({ id }, { email: normalizedEmail });
+    return { ok: true };
+  }
 }

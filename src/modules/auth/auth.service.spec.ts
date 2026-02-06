@@ -26,6 +26,7 @@ describe("AuthService", () => {
             findByEmail: jest.fn(),
             findById: jest.fn(),
             updatePasswordById: jest.fn(),
+            updateEmailById: jest.fn(),
           },
         },
         {
@@ -198,6 +199,16 @@ describe("AuthService", () => {
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.updatePasswordById).toHaveBeenCalledWith("user-1", "new-hash");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("changes email via users service", async () => {
+    usersService.updateEmailById.mockResolvedValueOnce({ ok: true } as any);
+
+    const result = await service.changeEmail("user-1", "new@loop.local");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updateEmailById).toHaveBeenCalledWith("user-1", "new@loop.local");
     expect(result).toEqual({ ok: true });
   });
 });
