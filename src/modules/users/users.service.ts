@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { In, IsNull, Repository } from "typeorm";
 import { GenreEntity } from "./genre.entity";
 import { InstrumentEntity } from "./instrument.entity";
 import { Profile } from "./profile.entity";
@@ -349,6 +349,18 @@ export class UsersService {
 
     const profile = await this.profileRepo.findOne({
       where: { id: user.profile.id },
+    });
+
+    if (!profile?.avatar) {
+      return null;
+    }
+
+    return profile.avatar;
+  }
+
+  async getAvatarForProfile(profileId: string) {
+    const profile = await this.profileRepo.findOne({
+      where: { id: profileId, isPublic: true, deletedAt: IsNull() },
     });
 
     if (!profile?.avatar) {

@@ -416,4 +416,23 @@ describe("UsersService", () => {
       },
     ]);
   });
+
+  it("returns null when profile avatar is missing", async () => {
+    profileRepo.findOne.mockResolvedValueOnce(null);
+
+    const result = await service.getAvatarForProfile("profile-1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns avatar buffer for public profiles", async () => {
+    profileRepo.findOne.mockResolvedValueOnce({
+      id: "profile-1",
+      avatar: Buffer.from("avatar"),
+    } as Profile);
+
+    const result = await service.getAvatarForProfile("profile-1");
+
+    expect(result).toEqual(Buffer.from("avatar"));
+  });
 });

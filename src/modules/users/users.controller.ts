@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   NotFoundException,
+  Param,
   Patch,
   Req,
   Res,
@@ -20,6 +21,7 @@ import {
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiResponse,
   ApiTags,
@@ -453,6 +455,25 @@ export class UsersController {
       return res.status(404).send();
     }
     const avatar = await this.usersService.getAvatarForUser(request.user.id);
+    if (!avatar) {
+      throw new NotFoundException("Avatar introuvable");
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    return res.send(avatar);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get a public profile avatar" })
+  @ApiParam({ name: "id", description: "Profile id", schema: { type: "string" } })
+  @ApiProduces("application/octet-stream")
+  @ApiResponse({
+    status: 404,
+    description: "Avatar introuvable",
+  })
+  @Get("profiles/:id/avatar")
+  async getProfileAvatar(@Param("id") profileId: string, @Res() res: Response) {
+    const avatar = await this.usersService.getAvatarForProfile(profileId);
     if (!avatar) {
       throw new NotFoundException("Avatar introuvable");
     }

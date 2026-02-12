@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import type { Request } from "express";
 import { AuthGuard } from "@modules/auth/auth.guard";
@@ -22,6 +22,7 @@ describe("UsersController", () => {
             getProfileForUser: jest.fn(),
             updateProfileForUser: jest.fn(),
             updateAvatarForUser: jest.fn(),
+            getAvatarForProfile: jest.fn(),
             listProfiles: jest.fn(),
           },
         },
@@ -188,6 +189,33 @@ describe("UsersController", () => {
 
     await expect(controller.updateMyAvatar(undefined, request)).rejects.toBeInstanceOf(
       BadRequestException,
+    );
+  });
+
+  it("returns profile avatar when available", async () => {
+    const response = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as any;
+    usersService.getAvatarForProfile.mockResolvedValueOnce(Buffer.from("avatar"));
+
+    await controller.getProfileAvatar("profile-1", response);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.getAvatarForProfile).toHaveBeenCalledWith("profile-1");
+    expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
+    expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
+  });
+
+  it("throws when profile avatar is missing", async () => {
+    const response = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as any;
+    usersService.getAvatarForProfile.mockResolvedValueOnce(null);
+
+    await expect(controller.getProfileAvatar("profile-1", response)).rejects.toBeInstanceOf(
+      NotFoundException,
     );
   });
 });
