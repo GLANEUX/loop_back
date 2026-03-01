@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, IsNull, Not, Repository } from "typeorm";
 import { UsersService } from "@modules/users/users.service";
@@ -7,6 +7,9 @@ import { Profile } from "@modules/users/profile.entity";
 import { InstrumentLevel } from "@modules/users/profile.enums";
 import { Swipe } from "./swipe.entity";
 import { Match } from "./match.entity";
+import { Message } from "@modules/messages/message.entity";
+import { MessagesService } from "@modules/messages/messages.service";
+import { MessageType } from "@modules/messages/message-type.enum";
 
 const DEFAULT_QUEUE_LIMIT = 20;
 const MAX_QUEUE_LIMIT = 50;
@@ -19,8 +22,12 @@ export class DiscoveryService {
     private readonly swipeRepo: Repository<Swipe>,
     @InjectRepository(Match)
     private readonly matchRepo: Repository<Match>,
+    @InjectRepository(Message)
+    private readonly messageRepo: Repository<Message>,
     @InjectRepository(Profile)
     private readonly profileRepo: Repository<Profile>,
+    @Inject(forwardRef(() => MessagesService))
+    private readonly messagesService: MessagesService,
   ) {}
 
   private formatProfileCard(profile: Profile) {
@@ -225,15 +232,42 @@ export class DiscoveryService {
     if (!match) {
       match = this.matchRepo.create({ profileAId, profileBId });
       match = await this.matchRepo.save(match);
+      await this.onMatchCreated(match);
       return { match, created: true };
     }
 
     if (match.deletedAt) {
       await this.matchRepo.restore(match.id);
-      return { match: { ...match, deletedAt: null }, created: true };
+      await this.matchRepo.update(match.id, {
+        lastReadMessageIdByA: null,
+        lastReadMessageIdByB: null,
+        lastDeliveredMessageIdByA: null,
+        lastDeliveredMessageIdByB: null,
+      });
+      const restored = { ...match, deletedAt: null };
+      await this.onMatchCreated(restored);
+      return { match: restored, created: true };
     }
 
     return { match, created: false };
+  }
+
+  private async onMatchCreated(match: Match) {
+    // Send system message
+    await this.messagesService.sendMessage(
+      "", // System message has no author
+      match.id,
+      "C'est un match ! Commencez à discuter.",
+      MessageType.System,
+    );
+
+    // Notify users via WebSockets
+    const profileA = await this.profileRepo.findOne({ where: { id: match.profileAId }, select: ["userId"] });
+    const profileB = await this.profileRepo.findOne({ where: { id: match.profileBId }, select: ["userId"] });
+
+    if (profileA?.userId && profileB?.userId) {
+      this.messagesService.notifyNewMatch(profileA.userId, profileB.userId, match.id);
+    }
   }
 
   private async removeMatch(profileId: string, otherProfileId: string) {
@@ -244,6 +278,13 @@ export class DiscoveryService {
     if (!match) {
       return;
     }
+    await this.matchRepo.update(match.id, {
+      lastReadMessageIdByA: null,
+      lastReadMessageIdByB: null,
+      lastDeliveredMessageIdByA: null,
+      lastDeliveredMessageIdByB: null,
+    });
+    await this.messageRepo.softDelete({ matchId: match.id });
     await this.matchRepo.softDelete(match.id);
   }
 }

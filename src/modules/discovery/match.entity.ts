@@ -35,6 +35,18 @@ export class Match {
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt!: Date;
 
+  @Column({ type: "uuid", name: "last_read_message_id_by_a", nullable: true })
+  lastReadMessageIdByA!: string | null;
+
+  @Column({ type: "uuid", name: "last_read_message_id_by_b", nullable: true })
+  lastReadMessageIdByB!: string | null;
+
+  @Column({ type: "uuid", name: "last_delivered_message_id_by_a", nullable: true })
+  lastDeliveredMessageIdByA!: string | null;
+
+  @Column({ type: "uuid", name: "last_delivered_message_id_by_b", nullable: true })
+  lastDeliveredMessageIdByB!: string | null;
+
   @DeleteDateColumn({ type: "timestamptz", name: "deleted_at" })
   deletedAt?: Date | null;
 }

@@ -24,6 +24,8 @@ describe("UsersController", () => {
             updateAvatarForUser: jest.fn(),
             getAvatarForProfile: jest.fn(),
             listProfiles: jest.fn(),
+            updateEmailById: jest.fn(),
+            updatePseudoById: jest.fn(),
           },
         },
       ],
@@ -93,6 +95,29 @@ describe("UsersController", () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.softDeleteById).toHaveBeenCalledWith("user-1");
     expect(result).toEqual({ ok: true });
+  });
+
+  it("updates user email and pseudo", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    const result = await controller.updateMe(
+      { email: "new@loop.local", pseudo: "NewPseudo" },
+      request,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updateEmailById).toHaveBeenCalledWith("user-1", "new@loop.local");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updatePseudoById).toHaveBeenCalledWith("user-1", "NewPseudo");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("validates user update payloads", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    await expect(controller.updateMe({ email: "invalid-email" }, request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it("validates profile update payloads", async () => {

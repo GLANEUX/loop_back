@@ -396,6 +396,23 @@ describe("UsersService", () => {
     );
   });
 
+  it("updates a user's pseudo with normalization and conflict check", async () => {
+    userRepo.findOne.mockResolvedValueOnce(null); // No existing pseudo
+
+    await service.updatePseudoById("user-1", "  NewPseudo  ");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { pseudo: "NewPseudo" });
+  });
+
+  it("throws conflict when updating pseudo to an already used one", async () => {
+    userRepo.findOne.mockResolvedValueOnce({ id: "user-2" } as User);
+
+    await expect(service.updatePseudoById("user-1", "UsedPseudo")).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
   it("lists profiles", async () => {
     profileRepo.find.mockResolvedValueOnce([
       {

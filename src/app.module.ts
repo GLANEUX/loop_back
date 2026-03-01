@@ -5,6 +5,7 @@ import { HealthModule } from "@modules/health/health.module";
 import { UsersModule } from "@modules/users/users.module";
 import { AuthModule } from "@modules/auth/auth.module";
 import { DiscoveryModule } from "@modules/discovery/discovery.module";
+import { MessagesModule } from "@modules/messages/messages.module";
 import { TypeOrmModule, type TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -31,6 +32,7 @@ import { GlobalThrottlerGuard } from "./guards/global-throttler.guard";
     UsersModule,
     AuthModule,
     DiscoveryModule,
+    MessagesModule,
   ],
   providers: [
     {

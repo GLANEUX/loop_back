@@ -404,4 +404,14 @@ export class UsersService {
     await this.userRepo.update({ id }, { email: normalizedEmail });
     return { ok: true };
   }
+
+  async updatePseudoById(id: string, pseudo: string) {
+    const normalized = this.normalizePseudo(pseudo);
+    const existing = await this.findByPseudo(normalized);
+    if (existing && existing.id !== id) {
+      throw new ConflictException("Pseudo déjà utilisé");
+    }
+    await this.userRepo.update({ id }, { pseudo: normalized });
+    return { ok: true };
+  }
 }

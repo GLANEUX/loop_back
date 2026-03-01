@@ -71,6 +71,11 @@ const profileUpdateSchema = z
   })
   .strict();
 
+const userUpdateSchema = z.object({
+  email: z.string().trim().email("Email invalide.").optional(),
+  pseudo: z.string().trim().min(3, "Pseudo trop court.").max(120, "Pseudo trop long.").optional(),
+});
+
 @ApiTags("Users")
 @Controller("user")
 export class UsersController {
@@ -190,6 +195,48 @@ export class UsersController {
       ...base,
       profile: user.profile ?? null,
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update current user" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", format: "email" },
+        pseudo: { type: "string" },
+      },
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @Patch("me")
+  async updateMe(@Body() body: unknown, @Req() request: Request) {
+    const parsed = userUpdateSchema.safeParse(body ?? {});
+    if (!parsed.success) {
+      throw new BadRequestException(z.treeifyError(parsed.error));
+    }
+
+    if (!request.user?.id) {
+      return null;
+    }
+
+    if (parsed.data.email) {
+      await this.usersService.updateEmailById(request.user.id, parsed.data.email);
+    }
+
+    if (parsed.data.pseudo) {
+      await this.usersService.updatePseudoById(request.user.id, parsed.data.pseudo);
+    }
+
+    return { ok: true };
   }
 
   @UseGuards(AuthGuard)

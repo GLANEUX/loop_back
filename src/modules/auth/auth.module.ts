@@ -11,6 +11,6 @@ import { Session } from "./session.entity";
   imports: [forwardRef(() => UsersModule), TypeOrmModule.forFeature([Session])],
   controllers: [AuthController],
   providers: [AuthService, RateLimitService, AuthGuard],
-  exports: [AuthService, AuthGuard],
+  exports: [AuthService, AuthGuard, RateLimitService],
 })
 export class AuthModule {}
