@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import type { Request } from "express";
 import { AuthGuard } from "@modules/auth/auth.guard";
@@ -22,7 +22,10 @@ describe("UsersController", () => {
             getProfileForUser: jest.fn(),
             updateProfileForUser: jest.fn(),
             updateAvatarForUser: jest.fn(),
+            getAvatarForProfile: jest.fn(),
             listProfiles: jest.fn(),
+            updateEmailById: jest.fn(),
+            updatePseudoById: jest.fn(),
           },
         },
       ],
@@ -92,6 +95,29 @@ describe("UsersController", () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.softDeleteById).toHaveBeenCalledWith("user-1");
     expect(result).toEqual({ ok: true });
+  });
+
+  it("updates user email and pseudo", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    const result = await controller.updateMe(
+      { email: "new@loop.local", pseudo: "NewPseudo" },
+      request,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updateEmailById).toHaveBeenCalledWith("user-1", "new@loop.local");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.updatePseudoById).toHaveBeenCalledWith("user-1", "NewPseudo");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("validates user update payloads", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+
+    await expect(controller.updateMe({ email: "invalid-email" }, request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it("validates profile update payloads", async () => {
@@ -188,6 +214,33 @@ describe("UsersController", () => {
 
     await expect(controller.updateMyAvatar(undefined, request)).rejects.toBeInstanceOf(
       BadRequestException,
+    );
+  });
+
+  it("returns profile avatar when available", async () => {
+    const response = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as any;
+    usersService.getAvatarForProfile.mockResolvedValueOnce(Buffer.from("avatar"));
+
+    await controller.getProfileAvatar("profile-1", response);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(usersService.getAvatarForProfile).toHaveBeenCalledWith("profile-1");
+    expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
+    expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
+  });
+
+  it("throws when profile avatar is missing", async () => {
+    const response = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as any;
+    usersService.getAvatarForProfile.mockResolvedValueOnce(null);
+
+    await expect(controller.getProfileAvatar("profile-1", response)).rejects.toBeInstanceOf(
+      NotFoundException,
     );
   });
 });

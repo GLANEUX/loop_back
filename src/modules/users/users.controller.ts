@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   NotFoundException,
+  Param,
   Patch,
   Req,
   Res,
@@ -20,6 +21,7 @@ import {
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiResponse,
   ApiTags,
@@ -68,6 +70,11 @@ const profileUpdateSchema = z
       .optional(),
   })
   .strict();
+
+const userUpdateSchema = z.object({
+  email: z.string().trim().email("Email invalide.").optional(),
+  pseudo: z.string().trim().min(3, "Pseudo trop court.").max(120, "Pseudo trop long.").optional(),
+});
 
 @ApiTags("Users")
 @Controller("user")
@@ -188,6 +195,48 @@ export class UsersController {
       ...base,
       profile: user.profile ?? null,
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update current user" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", format: "email" },
+        pseudo: { type: "string" },
+      },
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @Patch("me")
+  async updateMe(@Body() body: unknown, @Req() request: Request) {
+    const parsed = userUpdateSchema.safeParse(body ?? {});
+    if (!parsed.success) {
+      throw new BadRequestException(z.treeifyError(parsed.error));
+    }
+
+    if (!request.user?.id) {
+      return null;
+    }
+
+    if (parsed.data.email) {
+      await this.usersService.updateEmailById(request.user.id, parsed.data.email);
+    }
+
+    if (parsed.data.pseudo) {
+      await this.usersService.updatePseudoById(request.user.id, parsed.data.pseudo);
+    }
+
+    return { ok: true };
   }
 
   @UseGuards(AuthGuard)
@@ -453,6 +502,25 @@ export class UsersController {
       return res.status(404).send();
     }
     const avatar = await this.usersService.getAvatarForUser(request.user.id);
+    if (!avatar) {
+      throw new NotFoundException("Avatar introuvable");
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    return res.send(avatar);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get a public profile avatar" })
+  @ApiParam({ name: "id", description: "Profile id", schema: { type: "string" } })
+  @ApiProduces("application/octet-stream")
+  @ApiResponse({
+    status: 404,
+    description: "Avatar introuvable",
+  })
+  @Get("profiles/:id/avatar")
+  async getProfileAvatar(@Param("id") profileId: string, @Res() res: Response) {
+    const avatar = await this.usersService.getAvatarForProfile(profileId);
     if (!avatar) {
       throw new NotFoundException("Avatar introuvable");
     }

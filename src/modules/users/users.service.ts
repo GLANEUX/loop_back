@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { In, IsNull, Repository } from "typeorm";
 import { GenreEntity } from "./genre.entity";
 import { InstrumentEntity } from "./instrument.entity";
 import { Profile } from "./profile.entity";
@@ -358,6 +358,18 @@ export class UsersService {
     return profile.avatar;
   }
 
+  async getAvatarForProfile(profileId: string) {
+    const profile = await this.profileRepo.findOne({
+      where: { id: profileId, isPublic: true, deletedAt: IsNull() },
+    });
+
+    if (!profile?.avatar) {
+      return null;
+    }
+
+    return profile.avatar;
+  }
+
   async listGenres() {
     return this.genreRepo.find({ order: { name: "ASC" } });
   }
@@ -390,6 +402,16 @@ export class UsersService {
     }
 
     await this.userRepo.update({ id }, { email: normalizedEmail });
+    return { ok: true };
+  }
+
+  async updatePseudoById(id: string, pseudo: string) {
+    const normalized = this.normalizePseudo(pseudo);
+    const existing = await this.findByPseudo(normalized);
+    if (existing && existing.id !== id) {
+      throw new ConflictException("Pseudo déjà utilisé");
+    }
+    await this.userRepo.update({ id }, { pseudo: normalized });
     return { ok: true };
   }
 }

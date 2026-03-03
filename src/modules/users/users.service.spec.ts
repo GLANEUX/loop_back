@@ -396,6 +396,23 @@ describe("UsersService", () => {
     );
   });
 
+  it("updates a user's pseudo with normalization and conflict check", async () => {
+    userRepo.findOne.mockResolvedValueOnce(null); // No existing pseudo
+
+    await service.updatePseudoById("user-1", "  NewPseudo  ");
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { pseudo: "NewPseudo" });
+  });
+
+  it("throws conflict when updating pseudo to an already used one", async () => {
+    userRepo.findOne.mockResolvedValueOnce({ id: "user-2" } as User);
+
+    await expect(service.updatePseudoById("user-1", "UsedPseudo")).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
   it("lists profiles", async () => {
     profileRepo.find.mockResolvedValueOnce([
       {
@@ -415,5 +432,24 @@ describe("UsersService", () => {
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
       },
     ]);
+  });
+
+  it("returns null when profile avatar is missing", async () => {
+    profileRepo.findOne.mockResolvedValueOnce(null);
+
+    const result = await service.getAvatarForProfile("profile-1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns avatar buffer for public profiles", async () => {
+    profileRepo.findOne.mockResolvedValueOnce({
+      id: "profile-1",
+      avatar: Buffer.from("avatar"),
+    } as Profile);
+
+    const result = await service.getAvatarForProfile("profile-1");
+
+    expect(result).toEqual(Buffer.from("avatar"));
   });
 });

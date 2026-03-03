@@ -110,11 +110,7 @@ describe("AuthController", () => {
     );
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(authService.changePassword).toHaveBeenCalledWith(
-      "user-1",
-      "OldPass123!",
-      "NewPass123!",
-    );
+    expect(authService.changePassword).toHaveBeenCalledWith("user-1", "OldPass123!", "NewPass123!");
     expect(result).toEqual({ ok: true });
   });
 
