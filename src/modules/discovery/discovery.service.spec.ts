@@ -19,7 +19,6 @@ describe("DiscoveryService", () => {
   let matchRepo: jest.Mocked<Repository<Match>>;
   let messageRepo: jest.Mocked<Repository<Message>>;
   let profileRepo: jest.Mocked<Repository<Profile>>;
-  let messagesService: jest.Mocked<MessagesService>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -81,7 +80,6 @@ describe("DiscoveryService", () => {
     matchRepo = moduleRef.get(getRepositoryToken(Match));
     messageRepo = moduleRef.get(getRepositoryToken(Message));
     profileRepo = moduleRef.get(getRepositoryToken(Profile));
-    messagesService = moduleRef.get(MessagesService);
   });
 
   afterEach(() => {
@@ -96,9 +94,7 @@ describe("DiscoveryService", () => {
         id: "profile-3",
         user: { pseudo: "loopster" },
         genres: [{ genre: { name: "Rock" } }],
-        instruments: [
-          { instrument: { name: "Guitar" }, level: InstrumentLevel.Beginner },
-        ],
+        instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Beginner }],
         avatar: null,
         firstName: "Ada",
         lastName: null,

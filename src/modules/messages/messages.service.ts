@@ -40,16 +40,25 @@ export class MessagesService {
     private readonly messagesGateway: MessagesGateway,
   ) {}
 
-  async sendMessage(userId: string, matchId: string, body: string, type: MessageType = MessageType.Text) {
+  async sendMessage(
+    userId: string,
+    matchId: string,
+    body: string,
+    type: MessageType = MessageType.Text,
+  ) {
     let authorProfileId: string | null = null;
-    let currentProfile: any = null;
+    let currentProfile: { id: string } | null = null;
 
     if (type !== MessageType.System) {
-      currentProfile = await this.usersService.getProfileForUser(userId);
+      currentProfile = (await this.usersService.getProfileForUser(userId)) as { id: string };
       authorProfileId = currentProfile?.id ?? null;
     }
 
-    const { match, isProfileA } = await this.getMatchForProfile(authorProfileId ?? "", matchId, type === MessageType.System);
+    const { match, isProfileA } = await this.getMatchForProfile(
+      authorProfileId ?? "",
+      matchId,
+      type === MessageType.System,
+    );
 
     this.enforceRateLimits(userId, matchId, type === MessageType.System);
 
@@ -144,7 +153,7 @@ export class MessagesService {
 
     const take = Math.min(Math.max(limit, 1), MAX_MESSAGES_LIMIT);
     let cursorBefore = before;
-    let cursorId = beforeId;
+    const cursorId = beforeId;
 
     if (!cursorBefore && cursorId) {
       const cursorMessage = await this.messageRepo.findOne({
@@ -532,9 +541,8 @@ export class MessagesService {
             : null,
         )
         .filter(
-          (
-            instrument,
-          ): instrument is { instrument: string; level: InstrumentLevel } => instrument !== null,
+          (instrument): instrument is { instrument: string; level: InstrumentLevel } =>
+            instrument !== null,
         ) ?? [];
 
     return {

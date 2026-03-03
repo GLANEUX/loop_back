@@ -20,17 +20,17 @@ describe("Messages (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    
+
     const server = app.getHttpServer();
     await new Promise<void>((resolve) => {
       server.listen(0, "127.0.0.1", () => {
         const address = server.address();
-        port = typeof address === "string" ? 0 : address?.port ?? 0;
+        port = typeof address === "string" ? 0 : (address?.port ?? 0);
         console.log(`Server listening on 127.0.0.1:${port}`);
         resolve();
       });
     });
-    
+
     dataSource = app.get(DataSource);
     rateLimitService = app.get(RateLimitService);
   });
@@ -50,7 +50,11 @@ describe("Messages (e2e)", () => {
     const res = await request(app.getHttpServer())
       .post("/auth/register")
       .send({ email, pseudo: email.split("@")[0], password: "Test1234!" });
-    return { token: res.body.accessToken, profileId: res.body.user.profile?.id, userId: res.body.user.id };
+    return {
+      token: res.body.accessToken,
+      profileId: res.body.user.profile?.id,
+      userId: res.body.user.id,
+    };
   };
 
   const createSocket = (token: string): Promise<Socket> => {
@@ -90,7 +94,7 @@ describe("Messages (e2e)", () => {
       .post("/swipes")
       .set("Authorization", `Bearer ${userA.token}`)
       .send({ targetProfileId: profileB.body.id, isLike: true });
-    
+
     const matchRes = await request(app.getHttpServer())
       .post("/swipes")
       .set("Authorization", `Bearer ${userB.token}`)

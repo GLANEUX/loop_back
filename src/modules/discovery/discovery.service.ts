@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, Inject, forwardRef } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, IsNull, Not, Repository } from "typeorm";
 import { UsersService } from "@modules/users/users.service";
@@ -46,9 +52,8 @@ export class DiscoveryService {
             : null,
         )
         .filter(
-          (
-            instrument,
-          ): instrument is { instrument: string; level: InstrumentLevel } => instrument !== null,
+          (instrument): instrument is { instrument: string; level: InstrumentLevel } =>
+            instrument !== null,
         ) ?? [];
 
     return {
@@ -200,8 +205,7 @@ export class DiscoveryService {
     const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
 
     return matches.flatMap((match) => {
-      const otherId =
-        match.profileAId === currentProfile.id ? match.profileBId : match.profileAId;
+      const otherId = match.profileAId === currentProfile.id ? match.profileBId : match.profileAId;
       const otherProfile = profileById.get(otherId);
       if (!otherProfile) {
         return [];
@@ -262,8 +266,14 @@ export class DiscoveryService {
     );
 
     // Notify users via WebSockets
-    const profileA = await this.profileRepo.findOne({ where: { id: match.profileAId }, select: ["userId"] });
-    const profileB = await this.profileRepo.findOne({ where: { id: match.profileBId }, select: ["userId"] });
+    const profileA = await this.profileRepo.findOne({
+      where: { id: match.profileAId },
+      select: ["userId"],
+    });
+    const profileB = await this.profileRepo.findOne({
+      where: { id: match.profileBId },
+      select: ["userId"],
+    });
 
     if (profileA?.userId && profileB?.userId) {
       this.messagesService.notifyNewMatch(profileA.userId, profileB.userId, match.id);

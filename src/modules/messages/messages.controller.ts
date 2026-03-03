@@ -83,112 +83,113 @@ export class MessagesController {
       throw new BadRequestException(z.treeifyError(parsedBody.error));
     }
 
-        return this.messagesService.sendMessage(
-          request.user.id,
-          parsedMatchId.data,
-          parsedBody.data.body,
-        );
-      }
-    
-      @UseGuards(AuthGuard)
-      @ApiBearerAuth()
-      @ApiOperation({ summary: "Update a message in a match" })
-      @ApiBody({
-        schema: {
-          type: "object",
-          required: ["body"],
-          properties: {
-            body: { type: "string", maxLength: 2000 },
-          },
-        },
-      })
-      @ApiOkResponse({
-        schema: {
-          type: "object",
-          properties: {
-            id: { type: "string", format: "uuid" },
-            matchId: { type: "string", format: "uuid" },
-            authorProfileId: { type: "string", format: "uuid", nullable: true },
-            type: { type: "string" },
-            body: { type: "string" },
-            createdAt: { type: "string", format: "date-time" },
-            editedAt: { type: "string", format: "date-time", nullable: true },
-          },
-        },
-      })
-      @Patch("matches/:matchId/messages/:messageId")
-      async updateMessage(
-        @Param("matchId") matchId: string,
-        @Param("messageId") messageId: string,
-        @Body() body: unknown,
-        @Req() request: Request,
-      ) {
-        if (!request.user?.id) {
-          return null;
-        }
-    
-        const parsedMatchId = matchIdSchema.safeParse(matchId);
-        if (!parsedMatchId.success) {
-          throw new BadRequestException("Match invalide");
-        }
-    
-        const parsedMessageId = z.string().uuid().safeParse(messageId);
-        if (!parsedMessageId.success) {
-          throw new BadRequestException("Message invalide");
-        }
-    
-        const parsedBody = sendMessageSchema.safeParse(body ?? {});
-        if (!parsedBody.success) {
-          throw new BadRequestException(z.treeifyError(parsedBody.error));
-        }
-    
-        return this.messagesService.updateMessage(
-          request.user.id,
-          parsedMatchId.data,
-          parsedMessageId.data,
-          parsedBody.data.body,
-        );
-      }
-    
-      @UseGuards(AuthGuard)
-      @ApiBearerAuth()
-      @ApiOperation({ summary: "Delete a message in a match" })
-      @ApiOkResponse({
-        schema: {
-          type: "object",
-          properties: {
-            ok: { type: "boolean", example: true },
-          },
-        },
-      })
-      @Delete("matches/:matchId/messages/:messageId")
-      async deleteMessage(
-        @Param("matchId") matchId: string,
-        @Param("messageId") messageId: string,
-        @Req() request: Request,
-      ) {
-        if (!request.user?.id) {
-          return null;
-        }
-    
-        const parsedMatchId = matchIdSchema.safeParse(matchId);
-        if (!parsedMatchId.success) {
-          throw new BadRequestException("Match invalide");
-        }
-    
-        const parsedMessageId = z.string().uuid().safeParse(messageId);
-        if (!parsedMessageId.success) {
-          throw new BadRequestException("Message invalide");
-        }
-    
-        return this.messagesService.deleteMessage(
-          request.user.id,
-          parsedMatchId.data,
-          parsedMessageId.data,
-        );
-      }
-    
-      @UseGuards(AuthGuard)  @ApiBearerAuth()
+    return this.messagesService.sendMessage(
+      request.user.id,
+      parsedMatchId.data,
+      parsedBody.data.body,
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update a message in a match" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["body"],
+      properties: {
+        body: { type: "string", maxLength: 2000 },
+      },
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid" },
+        matchId: { type: "string", format: "uuid" },
+        authorProfileId: { type: "string", format: "uuid", nullable: true },
+        type: { type: "string" },
+        body: { type: "string" },
+        createdAt: { type: "string", format: "date-time" },
+        editedAt: { type: "string", format: "date-time", nullable: true },
+      },
+    },
+  })
+  @Patch("matches/:matchId/messages/:messageId")
+  async updateMessage(
+    @Param("matchId") matchId: string,
+    @Param("messageId") messageId: string,
+    @Body() body: unknown,
+    @Req() request: Request,
+  ) {
+    if (!request.user?.id) {
+      return null;
+    }
+
+    const parsedMatchId = matchIdSchema.safeParse(matchId);
+    if (!parsedMatchId.success) {
+      throw new BadRequestException("Match invalide");
+    }
+
+    const parsedMessageId = z.string().uuid().safeParse(messageId);
+    if (!parsedMessageId.success) {
+      throw new BadRequestException("Message invalide");
+    }
+
+    const parsedBody = sendMessageSchema.safeParse(body ?? {});
+    if (!parsedBody.success) {
+      throw new BadRequestException(z.treeifyError(parsedBody.error));
+    }
+
+    return this.messagesService.updateMessage(
+      request.user.id,
+      parsedMatchId.data,
+      parsedMessageId.data,
+      parsedBody.data.body,
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Delete a message in a match" })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @Delete("matches/:matchId/messages/:messageId")
+  async deleteMessage(
+    @Param("matchId") matchId: string,
+    @Param("messageId") messageId: string,
+    @Req() request: Request,
+  ) {
+    if (!request.user?.id) {
+      return null;
+    }
+
+    const parsedMatchId = matchIdSchema.safeParse(matchId);
+    if (!parsedMatchId.success) {
+      throw new BadRequestException("Match invalide");
+    }
+
+    const parsedMessageId = z.string().uuid().safeParse(messageId);
+    if (!parsedMessageId.success) {
+      throw new BadRequestException("Message invalide");
+    }
+
+    return this.messagesService.deleteMessage(
+      request.user.id,
+      parsedMatchId.data,
+      parsedMessageId.data,
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "List messages for a match" })
   @ApiQuery({
     name: "limit",
