@@ -34,7 +34,7 @@ describe("Users (e2e)", () => {
 
   beforeEach(async () => {
     await dataSource.query(
-      `TRUNCATE TABLE "profile_genres", "profile_instruments", "genres", "instruments", "profiles", "sessions", "users" RESTART IDENTITY CASCADE`,
+      `TRUNCATE TABLE "swipes", "matches", "messages", "profile_genres", "profile_instruments", "genres", "instruments", "profiles", "sessions", "users" RESTART IDENTITY CASCADE`,
     );
     rateLimitService.resetAll();
   });

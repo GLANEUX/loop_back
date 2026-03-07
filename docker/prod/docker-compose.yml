@@ -5,6 +5,8 @@ services:
       dockerfile: docker/prod/Dockerfile
     container_name: loop_api
     restart: unless-stopped
+    environment:
+      - PORT=8080
     env_file:
       - ../../.env.production
     ports:
