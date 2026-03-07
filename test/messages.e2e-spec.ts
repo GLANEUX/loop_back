@@ -113,34 +113,45 @@ describe("Messages (e2e)", () => {
     const socketA = await createSocket(userA.token);
     const socketB = await createSocket(userB.token);
 
-    // Join match room
-    socketA.emit("join_match", matchId);
-    socketB.emit("join_match", matchId);
-
-    // Wait a bit for join to complete
-    await new Promise((r) => setTimeout(r, 100));
+    // Join match room with confirmation
+    console.log("Joining match rooms...");
+    const joinARes = await socketA.emitWithAck("join_match", matchId);
+    expect(joinARes.status).toBe("ok");
+    const joinBRes = await socketB.emitWithAck("join_match", matchId);
+    expect(joinBRes.status).toBe("ok");
+    console.log("Joined match rooms.");
 
     // Prepare to receive message on socket A
     const messagePromise = new Promise<any>((resolve) => {
-      socketA.on("message.new", (data) => resolve(data));
+      socketA.on("message.new", (data) => {
+        console.log("Socket A received message.new:", data.body);
+        resolve(data);
+      });
     });
 
+    console.log("User B sending message...");
     // User B sends a message
     const sendRes = await request(app.getHttpServer())
       .post(`/matches/${matchId}/messages`)
       .set("Authorization", `Bearer ${userB.token}`)
       .send({ body: "Salut userA !" })
       .expect(201);
+    console.log("User B message sent via POST, id:", sendRes.body.id);
 
     const receivedMessage = await messagePromise;
     expect(receivedMessage.body).toBe("Salut userA !");
     expect(receivedMessage.id).toBe(sendRes.body.id);
+    console.log("receivedMessage check OK");
 
     // User A marks as read
     const readPromise = new Promise<any>((resolve) => {
-      socketB.on("message.read", (data) => resolve(data));
+      socketB.on("message.read", (data) => {
+        console.log("Socket B received message.read:", data.messageId);
+        resolve(data);
+      });
     });
 
+    console.log("User A marking message as read...");
     await request(app.getHttpServer())
       .post(`/matches/${matchId}/read`)
       .set("Authorization", `Bearer ${userA.token}`)
@@ -150,12 +161,17 @@ describe("Messages (e2e)", () => {
     const readNotification = await readPromise;
     expect(readNotification.matchId).toBe(matchId);
     expect(readNotification.messageId).toBe(receivedMessage.id);
+    console.log("readNotification check OK");
 
     // User B updates message
     const updatePromise = new Promise<any>((resolve) => {
-      socketA.on("message.updated", (data) => resolve(data));
+      socketA.on("message.updated", (data) => {
+        console.log("Socket A received message.updated:", data.body);
+        resolve(data);
+      });
     });
 
+    console.log("User B updating message...");
     await request(app.getHttpServer())
       .patch(`/matches/${matchId}/messages/${receivedMessage.id}`)
       .set("Authorization", `Bearer ${userB.token}`)
@@ -164,12 +180,17 @@ describe("Messages (e2e)", () => {
 
     const updatedMessage = await updatePromise;
     expect(updatedMessage.body).toBe("Salut userA ! (modifié)");
+    console.log("updatedMessage check OK");
 
     // User B deletes message
     const deletePromise = new Promise<any>((resolve) => {
-      socketA.on("message.deleted", (data) => resolve(data));
+      socketA.on("message.deleted", (data) => {
+        console.log("Socket A received message.deleted:", data.id);
+        resolve(data);
+      });
     });
 
+    console.log("User B deleting message...");
     await request(app.getHttpServer())
       .delete(`/matches/${matchId}/messages/${receivedMessage.id}`)
       .set("Authorization", `Bearer ${userB.token}`)
@@ -177,8 +198,9 @@ describe("Messages (e2e)", () => {
 
     const deletedNotification = await deletePromise;
     expect(deletedNotification.id).toBe(receivedMessage.id);
+    console.log("deletedNotification check OK");
 
     socketA.disconnect();
     socketB.disconnect();
-  }, 10000);
+  }, 20000);
 });

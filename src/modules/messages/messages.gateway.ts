@@ -77,17 +77,19 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   @SubscribeMessage("join_match")
   async handleJoinMatch(client: AuthenticatedSocket, matchId: string) {
-    if (!client.data.user) return;
+    if (!client.data.user) return { status: "error", message: "Unauthorized" };
 
     // Verify user is part of the match before allowing them to join the room
     const isMember = await this.messagesService.isMemberOfMatch(client.data.user.id, matchId);
     if (isMember) {
       void client.join(`match:${matchId}`);
       this.logger.log(`User ${client.data.user.id} joined match room ${matchId}`);
+      return { status: "ok", matchId };
     } else {
       this.logger.warn(
         `User ${client.data.user.id} tried to join unauthorized match room ${matchId}`,
       );
+      return { status: "error", message: "Not a member of this match" };
     }
   }
 
