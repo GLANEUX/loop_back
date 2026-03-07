@@ -20,22 +20,25 @@ describe("Messages (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    await app.listen(0);
 
     const server = app.getHttpServer();
-    await new Promise<void>((resolve) => {
-      server.listen(0, "127.0.0.1", () => {
-        const address = server.address();
-        port = typeof address === "string" ? 0 : (address?.port ?? 0);
-        console.log(`Server listening on 127.0.0.1:${port}`);
-        resolve();
-      });
-    });
+    const address = server.address();
+    port = typeof address === "string" ? 0 : (address?.port ?? 0);
+    console.log(`Server listening on port ${port}`);
 
     dataSource = app.get(DataSource);
     rateLimitService = app.get(RateLimitService);
   });
 
+  const sockets: Socket[] = [];
+
   afterAll(async () => {
+    for (const socket of sockets) {
+      if (socket.connected) {
+        socket.disconnect();
+      }
+    }
     await app.close();
   });
 
@@ -64,8 +67,11 @@ describe("Messages (e2e)", () => {
         extraHeaders: {
           Authorization: `Bearer ${token}`,
         },
-        transports: ["websocket"], // Force websocket to avoid polling issues in tests
+        transports: ["websocket"],
+        forceNew: true,
+        reconnection: false,
       });
+      sockets.push(socket);
       socket.on("connect", () => {
         console.log("WebSocket connected!");
         resolve(socket);
