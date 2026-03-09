@@ -281,4 +281,39 @@ describe("DiscoveryService", () => {
       NotFoundException,
     );
   });
+
+  it("lists swiped profiles (likes/dislikes)", async () => {
+    usersService.getProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as Profile);
+    swipeRepo.find.mockResolvedValueOnce([
+      {
+        id: "swipe-1",
+        toProfileId: "profile-2",
+        createdAt: new Date(),
+        isLike: true,
+      } as unknown as Swipe,
+    ]);
+    profileRepo.find.mockResolvedValueOnce([
+      {
+        id: "profile-2",
+        user: { pseudo: "liked-user" },
+        genres: [],
+        instruments: [],
+        avatar: null,
+      } as unknown as Profile,
+    ]);
+
+    const result = await service.listSwipes("user-1", true);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].profile.pseudo).toBe("liked-user");
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(swipeRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          fromProfileId: "profile-1",
+          isLike: true,
+        }),
+      }),
+    );
+  });
 });

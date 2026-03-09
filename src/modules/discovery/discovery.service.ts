@@ -166,9 +166,54 @@ export class DiscoveryService {
       swipeId: swipe.id,
       isLike: swipe.isLike,
       createdAt: swipe.createdAt,
-      matchCreated,
-      matchId,
+      matchCreated: matchCreated,
+      matchId: matchId,
     };
+  }
+
+  async listSwipes(userId: string, isLike: boolean) {
+    const currentProfile = await this.usersService.getProfileForUser(userId);
+
+    const swipes = await this.swipeRepo.find({
+      where: {
+        fromProfileId: currentProfile.id,
+        isLike: isLike,
+        deletedAt: IsNull(),
+      },
+      order: { createdAt: "DESC" },
+    });
+
+    const targetProfileIds = swipes.map((swipe) => swipe.toProfileId);
+
+    if (targetProfileIds.length === 0) {
+      return [];
+    }
+
+    const profiles = await this.profileRepo.find({
+      where: {
+        id: In(targetProfileIds),
+        deletedAt: IsNull(),
+      },
+      relations: {
+        user: true,
+        genres: { genre: true },
+        instruments: { instrument: true },
+      },
+    });
+
+    const profileById = new Map(profiles.map((p) => [p.id, p]));
+
+    return swipes
+      .map((swipe) => {
+        const profile = profileById.get(swipe.toProfileId);
+        if (!profile) return null;
+        return {
+          id: swipe.id,
+          createdAt: swipe.createdAt,
+          profile: this.formatProfileCard(profile),
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
   }
 
   async listMatches(userId: string) {

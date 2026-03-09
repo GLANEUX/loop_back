@@ -18,6 +18,7 @@ describe("DiscoveryController", () => {
           useValue: {
             getQueue: jest.fn(),
             swipe: jest.fn(),
+            listSwipes: jest.fn(),
           },
         },
       ],
@@ -59,5 +60,18 @@ describe("DiscoveryController", () => {
     const request = { user: { id: "user-1" } } as Request;
 
     await expect(controller.getQueue(request, "0")).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("calls discovery service for likes/dislikes", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+    discoveryService.listSwipes.mockResolvedValue([]);
+
+    await controller.listLikes(request);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(discoveryService.listSwipes).toHaveBeenCalledWith("user-1", true);
+
+    await controller.listDislikes(request);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(discoveryService.listSwipes).toHaveBeenCalledWith("user-1", false);
   });
 });
