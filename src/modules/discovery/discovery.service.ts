@@ -11,6 +11,7 @@ import { UsersService } from "@modules/users/users.service";
 import { UserRole } from "@modules/users/user-role.enum";
 import { Profile } from "@modules/users/profile.entity";
 import { InstrumentLevel } from "@modules/users/profile.enums";
+import { ProfileMediaType } from "@modules/users/profile-media.entity";
 import { Swipe } from "./swipe.entity";
 import { Match } from "./match.entity";
 import { Message } from "@modules/messages/message.entity";
@@ -56,6 +57,16 @@ export class DiscoveryService {
             instrument !== null,
         ) ?? [];
 
+    const audio =
+      profile.media
+        ?.filter((m) => m.type === ProfileMediaType.Audio)
+        .map((m) => ({
+          id: m.id,
+          title: m.title ?? null,
+          mimeType: m.mimeType,
+          url: `/user/media/${m.id}`,
+        })) ?? [];
+
     return {
       id: profile.id,
       pseudo: profile.user?.pseudo ?? "",
@@ -67,6 +78,7 @@ export class DiscoveryService {
       hasAvatar: Boolean(profile.avatar),
       genres,
       instruments,
+      audio,
     };
   }
 
@@ -97,6 +109,7 @@ export class DiscoveryService {
         user: true,
         genres: { genre: true },
         instruments: { instrument: true },
+        media: true,
       },
       order: { createdAt: "DESC" },
       take: cappedLimit,
@@ -198,6 +211,7 @@ export class DiscoveryService {
         user: true,
         genres: { genre: true },
         instruments: { instrument: true },
+        media: true,
       },
     });
 
@@ -245,6 +259,7 @@ export class DiscoveryService {
         user: true,
         genres: { genre: true },
         instruments: { instrument: true },
+        media: true,
       },
     });
     const profileById = new Map(profiles.map((profile) => [profile.id, profile]));

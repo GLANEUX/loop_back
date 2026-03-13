@@ -15,6 +15,8 @@ import { User } from "./user.entity";
 import { InstrumentLevel } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 
+import { ProfileMedia, ProfileMediaType } from "./profile-media.entity";
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -30,6 +32,8 @@ export class UsersService {
     private readonly profileGenreRepo: Repository<ProfileGenre>,
     @InjectRepository(ProfileInstrument)
     private readonly profileInstrumentRepo: Repository<ProfileInstrument>,
+    @InjectRepository(ProfileMedia)
+    private readonly profileMediaRepo: Repository<ProfileMedia>,
   ) {}
 
   async findByEmail(email: string) {
@@ -62,12 +66,13 @@ export class UsersService {
       relations: {
         genres: { genre: true },
         instruments: { instrument: true },
+        media: true,
       },
     });
   }
 
   private formatProfile(profile: Profile) {
-    const { genres, instruments, avatar, ...rest } = profile;
+    const { genres, instruments, avatar, media, ...rest } = profile;
     return {
       ...rest,
       hasAvatar: Boolean(avatar),
@@ -89,7 +94,36 @@ export class UsersService {
             (instrument): instrument is { instrument: string; level: InstrumentLevel } =>
               instrument !== null,
           ) ?? [],
+      media:
+        media
+          ?.sort((a, b) => a.order - b.order)
+          .map((m) => ({
+            id: m.id,
+            type: m.type,
+            title: m.title ?? null,
+            mimeType: m.mimeType,
+            order: m.order,
+            createdAt: m.createdAt,
+            url: `/user/media/${m.id}`,
+          })) ?? [],
     };
+  }
+
+  async getProfileById(profileId: string) {
+    const profile = await this.profileRepo.findOne({
+      where: { id: profileId, isPublic: true, deletedAt: IsNull() },
+      relations: {
+        genres: { genre: true },
+        instruments: { instrument: true },
+        media: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException("Profil introuvable");
+    }
+
+    return this.formatProfile(profile);
   }
 
   async findWithProfileById(id: string) {
@@ -376,6 +410,69 @@ export class UsersService {
 
   async listInstruments() {
     return this.instrumentRepo.find({ order: { name: "ASC" } });
+  }
+
+  async addProfileMedia(
+    userId: string,
+    data: Buffer,
+    mimeType: string,
+    type: ProfileMediaType,
+    title?: string,
+  ) {
+    const user = await this.requireUserWithRole(userId);
+    let profileId: string;
+    if (user.profile) {
+      profileId = user.profile.id;
+    } else {
+      const created = this.profileRepo.create({
+        userId: user.id,
+        isPublic: true,
+      });
+      const saved = await this.profileRepo.save(created);
+      profileId = saved.id;
+    }
+
+    const count = await this.profileMediaRepo.count({ where: { profileId } });
+
+    const media = this.profileMediaRepo.create({
+      profileId,
+      data,
+      mimeType,
+      type,
+      title,
+      order: count,
+    });
+
+    return this.profileMediaRepo.save(media);
+  }
+
+  async getProfileMedia(id: string) {
+    const media = await this.profileMediaRepo.findOne({
+      where: { id },
+      select: ["id", "data", "mimeType"],
+    });
+    if (!media) {
+      throw new NotFoundException("Média introuvable");
+    }
+    return media;
+  }
+
+  async deleteProfileMedia(userId: string, mediaId: string) {
+    const user = await this.requireUserWithRole(userId);
+    if (!user.profile) {
+      throw new NotFoundException("Profil introuvable");
+    }
+
+    const media = await this.profileMediaRepo.findOne({
+      where: { id: mediaId, profileId: user.profile.id },
+    });
+
+    if (!media) {
+      throw new NotFoundException("Média introuvable ou vous n'êtes pas le propriétaire");
+    }
+
+    await this.profileMediaRepo.remove(media);
+    return { ok: true };
   }
 
   async softDeleteById(id: string) {

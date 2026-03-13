@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { RateLimitService } from "../src/modules/auth/rate-limit.service";
+import { InstrumentLevel } from "../src/modules/users/profile.enums";
 
 const registerPayload = (email: string) => ({
   email,
@@ -91,8 +92,8 @@ describe("Users (e2e)", () => {
         gender: "female",
         genres: ["Rock", "Jazz", " Rock "],
         instruments: [
-          { instrument: "Guitar", level: "Intermediate" },
-          { instrument: "Piano", level: "Beginner" },
+          { instrument: "Guitar", level: InstrumentLevel.Intermediate },
+          { instrument: "Piano", level: InstrumentLevel.Beginner },
         ],
       })
       .expect(200);
@@ -109,8 +110,8 @@ describe("Users (e2e)", () => {
     expect(profileRes.body.gender).toBe("female");
     expect(profileRes.body.genres).toEqual(["Rock", "Jazz"]);
     expect(profileRes.body.instruments).toEqual([
-      { instrument: "Guitar", level: "Intermediate" },
-      { instrument: "Piano", level: "Beginner" },
+      { instrument: "Guitar", level: InstrumentLevel.Intermediate },
+      { instrument: "Piano", level: InstrumentLevel.Beginner },
     ]);
   });
 

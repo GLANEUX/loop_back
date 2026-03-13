@@ -11,6 +11,10 @@ import { CatalogController } from "./catalog.controller";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
+import { ProfileMedia } from "./profile-media.entity";
+
+import { MediaController } from "./media.controller";
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -20,10 +24,11 @@ import { UsersService } from "./users.service";
       InstrumentEntity,
       ProfileGenre,
       ProfileInstrument,
+      ProfileMedia,
     ]),
     forwardRef(() => AuthModule),
   ],
-  controllers: [UsersController, CatalogController],
+  controllers: [UsersController, CatalogController, MediaController],
   providers: [UsersService],
   exports: [UsersService, TypeOrmModule],
 })

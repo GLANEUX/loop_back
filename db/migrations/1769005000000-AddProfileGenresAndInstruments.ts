@@ -13,7 +13,7 @@ export class AddProfileGenresAndInstruments1769005000000 implements MigrationInt
     await queryRunner.query(`DROP TYPE IF EXISTS "instrument_level_enum"`);
 
     await queryRunner.query(
-      `CREATE TYPE "instrument_level_enum" AS ENUM ('Beginner','Intermediate','Advanced','Professional')`,
+      `CREATE TYPE "instrument_level_enum" AS ENUM ('Débutant','Intermédiaire','Avancé','Expert')`,
     );
 
     await queryRunner.query(
@@ -103,7 +103,7 @@ export class AddProfileGenresAndInstruments1769005000000 implements MigrationInt
       `CREATE TYPE "instrument_enum" AS ENUM ('Guitar','Piano','Drums','Bass','Violin','Vocal','Other')`,
     );
     await queryRunner.query(
-      `CREATE TYPE "instrument_level_enum" AS ENUM ('Beginner','Intermediate','Advanced','Professional')`,
+      `CREATE TYPE "instrument_level_enum" AS ENUM ('Débutant','Intermédiaire','Avancé','Expert')`,
     );
 
     await queryRunner.query(`ALTER TABLE "profiles" ADD COLUMN "genres" "genre_enum"[]`);

@@ -11,6 +11,7 @@ import { InstrumentLevel } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 import { User } from "./user.entity";
 import { UsersService } from "./users.service";
+import { ProfileMedia } from "./profile-media.entity";
 
 describe("UsersService", () => {
   let service: UsersService;
@@ -20,6 +21,7 @@ describe("UsersService", () => {
   let instrumentRepo: jest.Mocked<Repository<InstrumentEntity>>;
   let profileGenreRepo: jest.Mocked<Repository<ProfileGenre>>;
   let profileInstrumentRepo: jest.Mocked<Repository<ProfileInstrument>>;
+  let profileMediaRepo: jest.Mocked<Repository<ProfileMedia>>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -77,6 +79,16 @@ describe("UsersService", () => {
             save: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(ProfileMedia),
+          useValue: {
+            count: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            findOne: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -87,6 +99,7 @@ describe("UsersService", () => {
     instrumentRepo = moduleRef.get(getRepositoryToken(InstrumentEntity));
     profileGenreRepo = moduleRef.get(getRepositoryToken(ProfileGenre));
     profileInstrumentRepo = moduleRef.get(getRepositoryToken(ProfileInstrument));
+    profileMediaRepo = moduleRef.get(getRepositoryToken(ProfileMedia));
   });
 
   afterEach(() => {
@@ -148,6 +161,7 @@ describe("UsersService", () => {
         hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
+        media: [],
       },
     });
   });
@@ -230,6 +244,7 @@ describe("UsersService", () => {
       hasAvatar: false,
       genres: ["Jazz"],
       instruments: [{ instrument: "Piano", level: InstrumentLevel.Advanced }],
+      media: [],
     });
   });
 
@@ -255,6 +270,7 @@ describe("UsersService", () => {
       hasAvatar: false,
       genres: ["Rock"],
       instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
+      media: [],
     });
   });
 
@@ -320,6 +336,7 @@ describe("UsersService", () => {
       hasAvatar: false,
       genres: ["Rock"],
       instruments: [{ instrument: "Guitar", level: InstrumentLevel.Advanced }],
+      media: [],
     });
   });
 
@@ -341,7 +358,13 @@ describe("UsersService", () => {
       userId: "user-1",
       isPublic: true,
     });
-    expect(result).toEqual({ id: "profile-1", hasAvatar: false, genres: [], instruments: [] });
+    expect(result).toEqual({
+      id: "profile-1",
+      hasAvatar: false,
+      genres: [],
+      instruments: [],
+      media: [],
+    });
   });
 
   it("soft deletes a user by id", async () => {
@@ -430,6 +453,7 @@ describe("UsersService", () => {
         hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
+        media: [],
       },
     ]);
   });
@@ -451,5 +475,30 @@ describe("UsersService", () => {
     const result = await service.getAvatarForProfile("profile-1");
 
     expect(result).toEqual(Buffer.from("avatar"));
+  });
+
+  it("fetches a public profile by id", async () => {
+    profileRepo.findOne.mockResolvedValueOnce({
+      id: "profile-1",
+      genres: [{ genre: { name: "Jazz" } }],
+      instruments: [{ instrument: { name: "Piano" }, level: InstrumentLevel.Advanced }],
+      media: [],
+    } as unknown as Profile);
+
+    const result = await service.getProfileById("profile-1");
+
+    expect(result).toEqual({
+      id: "profile-1",
+      hasAvatar: false,
+      genres: ["Jazz"],
+      instruments: [{ instrument: "Piano", level: InstrumentLevel.Advanced }],
+      media: [],
+    });
+  });
+
+  it("throws not found when profile is missing or private", async () => {
+    profileRepo.findOne.mockResolvedValueOnce(null);
+
+    await expect(service.getProfileById("profile-1")).rejects.toBeInstanceOf(NotFoundException);
   });
 });

@@ -8,7 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Profile } from "@modules/users/profile.entity";
+import { Profile } from "../users/profile.entity";
 
 @Entity("matches")
 @Index(["profileAId", "profileBId"], { unique: true })

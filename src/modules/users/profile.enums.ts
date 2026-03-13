@@ -1,6 +1,6 @@
 export enum InstrumentLevel {
-  Beginner = "Beginner",
-  Intermediate = "Intermediate",
-  Advanced = "Advanced",
-  Professional = "Professional",
+  Beginner = "Débutant",
+  Intermediate = "Intermédiaire",
+  Advanced = "Avancé",
+  Professional = "Expert",
 }

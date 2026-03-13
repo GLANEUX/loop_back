@@ -527,4 +527,66 @@ export class UsersController {
     res.setHeader("Content-Type", "application/octet-stream");
     return res.send(avatar);
   }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get a public profile" })
+  @ApiParam({ name: "id", description: "Profile id", schema: { type: "string" } })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid" },
+        userId: { type: "string", format: "uuid" },
+        firstName: { type: "string", nullable: true },
+        lastName: { type: "string", nullable: true },
+        phoneNumber: { type: "string", nullable: true },
+        birthDate: { type: "string", format: "date", nullable: true },
+        gender: { type: "string", nullable: true },
+        bio: { type: "string", nullable: true },
+        isPublic: { type: "boolean" },
+        hasAvatar: { type: "boolean" },
+        genres: {
+          type: "array",
+          items: { type: "string" },
+          nullable: true,
+        },
+        instruments: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              instrument: { type: "string" },
+              level: { type: "string", enum: Object.values(InstrumentLevel) },
+            },
+          },
+          nullable: true,
+        },
+        media: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", format: "uuid" },
+              type: { type: "string" },
+              title: { type: "string", nullable: true },
+              mimeType: { type: "string" },
+              order: { type: "number" },
+              createdAt: { type: "string", format: "date-time" },
+              url: { type: "string" },
+            },
+          },
+          nullable: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Profil introuvable",
+  })
+  @Get("profiles/:id")
+  async getProfile(@Param("id") profileId: string) {
+    return this.usersService.getProfileById(profileId);
+  }
 }

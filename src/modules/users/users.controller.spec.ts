@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import type { Request } from "express";
 import { AuthGuard } from "@modules/auth/auth.guard";
 import { UserRole } from "./user-role.enum";
+import { InstrumentLevel } from "./profile.enums";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
@@ -143,7 +144,7 @@ describe("UsersController", () => {
     await controller.updateMyProfile(
       {
         genres: ["Rock", "Jazz"],
-        instruments: [{ instrument: "Guitar", level: "Intermediate" }],
+        instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
       },
       request,
     );
@@ -151,7 +152,7 @@ describe("UsersController", () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.updateProfileForUser).toHaveBeenCalledWith("user-1", {
       genres: ["Rock", "Jazz"],
-      instruments: [{ instrument: "Guitar", level: "Intermediate" }],
+      instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
     });
   });
 

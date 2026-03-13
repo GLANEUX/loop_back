@@ -12,6 +12,7 @@ import {
 import { User } from "./user.entity";
 import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
+import { ProfileMedia } from "./profile-media.entity";
 
 @Entity("profiles")
 export class Profile {
@@ -58,6 +59,9 @@ export class Profile {
     cascade: true,
   })
   genres?: ProfileGenre[];
+
+  @OneToMany(() => ProfileMedia, (media) => media.profile)
+  media?: ProfileMedia[];
 
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt!: Date;

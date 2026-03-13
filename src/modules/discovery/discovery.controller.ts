@@ -66,6 +66,19 @@ export class DiscoveryController {
             },
             nullable: true,
           },
+          audio: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string", format: "uuid" },
+                title: { type: "string", nullable: true },
+                mimeType: { type: "string" },
+                url: { type: "string" },
+              },
+            },
+            nullable: true,
+          },
         },
       },
     },
@@ -171,6 +184,19 @@ export class DiscoveryController {
                 },
                 nullable: true,
               },
+              audio: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", format: "uuid" },
+                    title: { type: "string", nullable: true },
+                    mimeType: { type: "string" },
+                    url: { type: "string" },
+                  },
+                },
+                nullable: true,
+              },
             },
           },
         },
@@ -219,6 +245,19 @@ export class DiscoveryController {
                   properties: {
                     instrument: { type: "string" },
                     level: { type: "string" },
+                  },
+                },
+                nullable: true,
+              },
+              audio: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", format: "uuid" },
+                    title: { type: "string", nullable: true },
+                    mimeType: { type: "string" },
+                    url: { type: "string" },
                   },
                 },
                 nullable: true,

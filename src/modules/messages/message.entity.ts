@@ -8,8 +8,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Match } from "@modules/discovery/match.entity";
-import { Profile } from "@modules/users/profile.entity";
+import { Match } from "../discovery/match.entity";
+import { Profile } from "../users/profile.entity";
 import { MessageType } from "./message-type.enum";
 
 @Entity("messages")

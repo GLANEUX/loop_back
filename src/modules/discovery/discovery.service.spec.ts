@@ -118,6 +118,7 @@ describe("DiscoveryService", () => {
         hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
+        audio: [],
       },
     ]);
     // eslint-disable-next-line @typescript-eslint/unbound-method

@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { Profile } from "@modules/users/profile.entity";
+import { Profile } from "../users/profile.entity";
 
 @Entity("swipes")
 @Index(["fromProfileId", "toProfileId"], { unique: true })
