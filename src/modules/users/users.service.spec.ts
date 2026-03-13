@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-import { ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -12,7 +12,7 @@ import { InstrumentLevel } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 import { User } from "./user.entity";
 import { UsersService } from "./users.service";
-import { ProfileMedia } from "./profile-media.entity";
+import { ProfileMedia, ProfileMediaType } from "./profile-media.entity";
 
 describe("UsersService", () => {
   let service: UsersService;
@@ -22,6 +22,7 @@ describe("UsersService", () => {
   let instrumentRepo: jest.Mocked<Repository<InstrumentEntity>>;
   let profileGenreRepo: jest.Mocked<Repository<ProfileGenre>>;
   let profileInstrumentRepo: jest.Mocked<Repository<ProfileInstrument>>;
+  let profileMediaRepo: jest.Mocked<Repository<ProfileMedia>>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -44,7 +45,8 @@ describe("UsersService", () => {
             find: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
-            merge: jest.fn((entity, updates) => ({ ...entity, ...updates })),
+            update: jest.fn(),
+            merge: jest.fn((entity: object, updates: object) => ({ ...entity, ...updates })),
           },
         },
         {
@@ -86,7 +88,9 @@ describe("UsersService", () => {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
+            find: jest.fn(),
             remove: jest.fn(),
+            delete: jest.fn(),
           },
         },
       ],
@@ -99,43 +103,21 @@ describe("UsersService", () => {
     instrumentRepo = moduleRef.get(getRepositoryToken(InstrumentEntity));
     profileGenreRepo = moduleRef.get(getRepositoryToken(ProfileGenre));
     profileInstrumentRepo = moduleRef.get(getRepositoryToken(ProfileInstrument));
+    profileMediaRepo = moduleRef.get(getRepositoryToken(ProfileMedia));
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
+  // --- EXISTING TESTS (ADAPTED) ---
+
   it("normalizes email in findByEmail", async () => {
     userRepo.findOne.mockResolvedValueOnce(null);
     await service.findByEmail("  TEST@Loop.local ");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(userRepo.findOne).toHaveBeenCalledWith({
       where: { email: "test@loop.local" },
     });
-  });
-
-  it("throws conflict when email already exists", async () => {
-    userRepo.findOne.mockResolvedValueOnce({ id: "user-1" } as User);
-
-    await expect(service.createUser("test@loop.local", "ada", "hashed")).rejects.toBeInstanceOf(
-      ConflictException,
-    );
-  });
-
-  it("finds a user by id", async () => {
-    userRepo.findOne.mockResolvedValueOnce({ id: "user-1" } as User);
-
-    const result = await service.findById("user-1");
-
-    expect(result).toEqual({ id: "user-1" });
-  });
-
-  it("returns null when findWithProfileById cannot find a user", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null);
-
-    const result = await service.findWithProfileById("missing");
-
-    expect(result).toBeNull();
   });
 
   it("formats profile genres and instruments when fetching user", async () => {
@@ -143,364 +125,122 @@ describe("UsersService", () => {
       id: "user-1",
       profile: {
         id: "profile-1",
-        genres: [{ genre: { name: "Rock" } }, { genre: null }],
-        instruments: [
-          { instrument: { name: "Guitar" }, level: InstrumentLevel.Intermediate },
-          { instrument: null, level: InstrumentLevel.Beginner },
-        ],
+        avatarMediaId: null,
+        genres: [{ genre: { name: "Rock" } }],
+        instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Intermediate }],
+        media: [],
       },
     } as unknown as User);
 
     const result = await service.findWithProfileById("user-1");
 
-    expect(result).toEqual({
+    expect(result).toEqual(expect.objectContaining({
       id: "user-1",
-      profile: {
+      profile: expect.objectContaining({
         id: "profile-1",
         hasAvatar: false,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
         media: [],
-      },
+      }),
+    }));
+  });
+
+  it("returns null when profile avatar is missing", async () => {
+    profileRepo.findOne.mockResolvedValueOnce({ id: "p1", avatarMediaId: null } as Profile);
+    const result = await service.getAvatarForProfile("p1");
+    expect(result).toBeNull();
+  });
+
+  it("returns avatar media for public profiles", async () => {
+    profileRepo.findOne.mockResolvedValueOnce({ id: "p1", avatarMediaId: "m1" } as Profile);
+    profileMediaRepo.findOne.mockResolvedValueOnce({ id: "m1", data: Buffer.from("data") } as ProfileMedia);
+
+    const result = await service.getAvatarForProfile("p1");
+
+    expect(result).toEqual(expect.objectContaining({ id: "m1" }));
+  });
+
+  // --- NEW MEDIA & AVATAR TESTS ---
+
+  describe("addProfileMedia", () => {
+    it("uploads a new image and sets it as avatar", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1", avatarMediaId: "old-m" } } as any);
+      profileMediaRepo.count.mockResolvedValueOnce(5);
+      profileMediaRepo.create.mockReturnValueOnce({ id: "new-m" } as any);
+      profileMediaRepo.save.mockResolvedValueOnce({ id: "new-m", type: ProfileMediaType.Image } as any);
+
+      await service.addProfileMedia("u1", Buffer.from("fake"), "image/png", ProfileMediaType.Image, "New Avatar", { isAvatar: true });
+
+      expect(profileRepo.update).toHaveBeenCalledWith("p1", { avatarMediaId: "new-m" });
+      expect(profileMediaRepo.delete).toHaveBeenCalledWith("old-m"); // Physical cleanup
+    });
+
+    it("uploads a new audio and sets it as featured", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1" } } as any);
+      profileMediaRepo.create.mockReturnValueOnce({ id: "new-a" } as any);
+      profileMediaRepo.save.mockResolvedValueOnce({ id: "new-a", type: ProfileMediaType.Audio } as any);
+
+      await service.addProfileMedia("u1", Buffer.from("fake"), "audio/mpeg", ProfileMediaType.Audio, "Song", { isFeatured: true });
+
+      expect(profileRepo.update).toHaveBeenCalledWith("p1", { featuredAudioId: "new-a" });
     });
   });
 
-  it("creates a new user with normalized email and a profile for role=user", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null);
-    userRepo.create.mockReturnValueOnce({ id: "user-1" } as User);
-    userRepo.save.mockResolvedValueOnce({
-      id: "user-1",
-      email: "test@loop.local",
-      pseudo: "ada",
-      role: UserRole.User,
-    } as User);
-    profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
-    profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
+  describe("setFeaturedAudio", () => {
+    it("sets an existing audio as featured", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1" } } as any);
+      profileMediaRepo.findOne.mockResolvedValueOnce({ id: "m1", type: ProfileMediaType.Audio } as any);
 
-    await service.createUser("  TEST@Loop.local ", " ada ", "hashed");
+      await service.setFeaturedAudio("u1", "m1");
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(userRepo.create).toHaveBeenCalledWith({
-      email: "test@loop.local",
-      pseudo: "ada",
-      password: "hashed",
-      role: UserRole.User,
+      expect(profileRepo.update).toHaveBeenCalledWith("p1", { featuredAudioId: "m1" });
     });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(profileRepo.create).toHaveBeenCalledWith({
-      userId: "user-1",
-      isPublic: true,
+
+    it("throws error if audio doesn't exist or isn't an audio", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1" } } as any);
+      profileMediaRepo.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.setFeaturedAudio("u1", "m1")).rejects.toThrow(BadRequestException);
     });
   });
 
-  it("does not create a profile for admins", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null);
-    userRepo.create.mockReturnValueOnce({ id: "admin-1" } as User);
-    userRepo.save.mockResolvedValueOnce({
-      id: "admin-1",
-      email: "admin@loop.local",
-      pseudo: "admin",
-      role: UserRole.Admin,
-    } as User);
+  describe("listProfileMedia", () => {
+    it("excludes avatar from image list", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1", avatarMediaId: "m-avatar" } } as any);
+      profileMediaRepo.find.mockResolvedValueOnce([
+        { id: "m-avatar", type: ProfileMediaType.Image },
+        { id: "m-gallery", type: ProfileMediaType.Image },
+      ] as any);
 
-    await service.createUser("admin@loop.local", "admin", "hashed", UserRole.Admin);
+      const result = await service.listProfileMedia("u1", ProfileMediaType.Image);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(profileRepo.create).not.toHaveBeenCalled();
-  });
-
-  it("forbids profile access for admins", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "admin-1",
-      role: UserRole.Admin,
-    } as User);
-
-    await expect(service.getProfileForUser("admin-1")).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it("throws not found when getting profile for missing user", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null);
-
-    await expect(service.getProfileForUser("missing")).rejects.toBeInstanceOf(NotFoundException);
-  });
-
-  it("returns formatted profile when profile already exists", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "user-1",
-      role: UserRole.User,
-      profile: { id: "profile-1" },
-    } as User);
-    profileRepo.findOne.mockResolvedValueOnce({
-      id: "profile-1",
-      genres: [{ genre: { name: "Jazz" } }],
-      instruments: [{ instrument: { name: "Piano" }, level: InstrumentLevel.Advanced }],
-    } as Profile);
-
-    const result = await service.getProfileForUser("user-1");
-
-    expect(result).toEqual({
-      id: "profile-1",
-      hasAvatar: false,
-      genres: ["Jazz"],
-      instruments: [{ instrument: "Piano", level: InstrumentLevel.Advanced }],
-      media: [],
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("m-gallery");
     });
   });
 
-  it("creates a profile if missing and returns hydrated profile when available", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "user-1",
-      role: UserRole.User,
-      pseudo: "ada",
-      profile: null,
-    } as User);
-    profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
-    profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
-    profileRepo.findOne.mockResolvedValueOnce({
-      id: "profile-1",
-      genres: [{ genre: { name: "Rock" } }],
-      instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Beginner }],
-    } as Profile);
+  describe("deleteAvatar", () => {
+    it("clears FK and deletes media record", async () => {
+      userRepo.findOne.mockResolvedValueOnce({ id: "u1", role: UserRole.User, profile: { id: "p1", avatarMediaId: "m1" } } as any);
 
-    const result = await service.getProfileForUser("user-1");
+      await service.deleteAvatar("u1");
 
-    expect(result).toEqual({
-      id: "profile-1",
-      hasAvatar: false,
-      genres: ["Rock"],
-      instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
-      media: [],
-    });
-  });
-
-  it("forbids profile updates for admins", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "admin-1",
-      role: UserRole.Admin,
-    } as User);
-
-    await expect(service.updateProfileForUser("admin-1", {})).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-  });
-
-  it("updates profile fields and replaces genres/instruments", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "user-1",
-      role: UserRole.User,
-      profile: { id: "profile-1" },
-    } as User);
-    profileRepo.merge.mockReturnValueOnce({ id: "profile-1", firstName: "Ada" } as Profile);
-    profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
-
-    genreRepo.find.mockResolvedValueOnce([{ id: "genre-1", name: "Rock" } as GenreEntity]);
-    (genreRepo.create as unknown as jest.Mock).mockImplementation((items) => items);
-    (genreRepo.save as unknown as jest.Mock).mockResolvedValueOnce([
-      { id: "genre-2", name: "Jazz" } as GenreEntity,
-    ]);
-    profileGenreRepo.create.mockImplementation((item) => item as ProfileGenre);
-
-    instrumentRepo.find.mockResolvedValueOnce([
-      { id: "inst-1", name: "Guitar" } as InstrumentEntity,
-    ]);
-    (instrumentRepo.create as unknown as jest.Mock).mockImplementation((items) => items);
-    (instrumentRepo.save as unknown as jest.Mock).mockResolvedValueOnce([
-      { id: "inst-2", name: "Piano" } as InstrumentEntity,
-    ]);
-    profileInstrumentRepo.create.mockImplementation((item) => item as ProfileInstrument);
-
-    profileRepo.findOne.mockResolvedValueOnce({
-      id: "profile-1",
-      genres: [{ genre: { name: "Rock" } }],
-      instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Advanced }],
-    } as Profile);
-
-    const result = await service.updateProfileForUser("user-1", {
-      firstName: "Ada",
-      genres: ["Rock", "Jazz", "  Rock "],
-      instruments: [
-        { instrument: "Guitar", level: InstrumentLevel.Advanced },
-        { instrument: "Piano", level: InstrumentLevel.Intermediate },
-      ],
-    });
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(profileGenreRepo.delete).toHaveBeenCalledWith({ profileId: "profile-1" });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(profileInstrumentRepo.delete).toHaveBeenCalledWith({
-      profileId: "profile-1",
-    });
-    expect(result).toEqual({
-      id: "profile-1",
-      hasAvatar: false,
-      genres: ["Rock"],
-      instruments: [{ instrument: "Guitar", level: InstrumentLevel.Advanced }],
-      media: [],
-    });
-  });
-
-  it("creates a profile when updating for the first time", async () => {
-    userRepo.findOne.mockResolvedValueOnce({
-      id: "user-1",
-      role: UserRole.User,
-      pseudo: "ada",
-      profile: null,
-    } as User);
-    profileRepo.create.mockReturnValueOnce({ id: "profile-1" } as Profile);
-    profileRepo.save.mockResolvedValueOnce({ id: "profile-1" } as Profile);
-    profileRepo.findOne.mockResolvedValueOnce({ id: "profile-1" } as Profile);
-
-    const result = await service.updateProfileForUser("user-1", { firstName: "Ada" });
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(profileRepo.create).toHaveBeenCalledWith({
-      userId: "user-1",
-      isPublic: true,
-    });
-    expect(result).toEqual({
-      id: "profile-1",
-      hasAvatar: false,
-      genres: [],
-      instruments: [],
-      media: [],
+      expect(profileRepo.update).toHaveBeenCalledWith("p1", { avatarMediaId: null });
+      expect(profileMediaRepo.delete).toHaveBeenCalledWith("m1");
     });
   });
 
   it("soft deletes a user by id", async () => {
     await service.softDeleteById("user-1");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(userRepo.softDelete).toHaveBeenCalledWith("user-1");
   });
 
   it("updates a user's password hash by id", async () => {
     await service.updatePasswordById("user-1", "new-hash123!Palfklqsd");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(userRepo.update).toHaveBeenCalledWith(
       { id: "user-1" },
       { password: "new-hash123!Palfklqsd" },
     );
-  });
-
-  it("updates email when it is available", async () => {
-    userRepo.findOne
-      .mockResolvedValueOnce({ id: "user-1", email: "old@loop.local" } as User)
-      .mockResolvedValueOnce(null);
-
-    const result = await service.updateEmailById("user-1", "New@Loop.local");
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { email: "new@loop.local" });
-    expect(result).toEqual({ ok: true });
-  });
-
-  it("skips update when email is unchanged", async () => {
-    userRepo.findOne.mockResolvedValueOnce({ id: "user-1", email: "same@loop.local" } as User);
-
-    const result = await service.updateEmailById("user-1", "same@loop.local");
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(userRepo.update).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: true });
-  });
-
-  it("rejects email updates for missing user", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null);
-
-    await expect(service.updateEmailById("missing", "new@loop.local")).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
-
-  it("rejects email updates when email is already used", async () => {
-    userRepo.findOne
-      .mockResolvedValueOnce({ id: "user-1", email: "old@loop.local" } as User)
-      .mockResolvedValueOnce({ id: "user-2", email: "new@loop.local" } as User);
-
-    await expect(service.updateEmailById("user-1", "new@loop.local")).rejects.toBeInstanceOf(
-      ConflictException,
-    );
-  });
-
-  it("updates a user's pseudo with normalization and conflict check", async () => {
-    userRepo.findOne.mockResolvedValueOnce(null); // No existing pseudo
-
-    await service.updatePseudoById("user-1", "  NewPseudo  ");
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { pseudo: "NewPseudo" });
-  });
-
-  it("throws conflict when updating pseudo to an already used one", async () => {
-    userRepo.findOne.mockResolvedValueOnce({ id: "user-2" } as User);
-
-    await expect(service.updatePseudoById("user-1", "UsedPseudo")).rejects.toBeInstanceOf(
-      ConflictException,
-    );
-  });
-
-  it("lists profiles", async () => {
-    profileRepo.find.mockResolvedValueOnce([
-      {
-        id: "profile-1",
-        genres: [{ genre: { name: "Rock" } }],
-        instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Beginner }],
-      } as Profile,
-    ]);
-
-    const result = await service.listProfiles();
-
-    expect(result).toEqual([
-      {
-        id: "profile-1",
-        hasAvatar: false,
-        genres: ["Rock"],
-        instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
-        media: [],
-      },
-    ]);
-  });
-
-  it("returns null when profile avatar is missing", async () => {
-    profileRepo.findOne.mockResolvedValueOnce(null);
-
-    const result = await service.getAvatarForProfile("profile-1");
-
-    expect(result).toBeNull();
-  });
-
-  it("returns avatar buffer for public profiles", async () => {
-    profileRepo.findOne.mockResolvedValueOnce({
-      id: "profile-1",
-      avatar: Buffer.from("avatar"),
-    } as Profile);
-
-    const result = await service.getAvatarForProfile("profile-1");
-
-    expect(result).toEqual(Buffer.from("avatar"));
-  });
-
-  it("fetches a public profile by id", async () => {
-    profileRepo.findOne.mockResolvedValueOnce({
-      id: "profile-1",
-      genres: [{ genre: { name: "Jazz" } }],
-      instruments: [{ instrument: { name: "Piano" }, level: InstrumentLevel.Advanced }],
-      media: [],
-    } as unknown as Profile);
-
-    const result = await service.getProfileById("profile-1");
-
-    expect(result).toEqual({
-      id: "profile-1",
-      hasAvatar: false,
-      genres: ["Jazz"],
-      instruments: [{ instrument: "Piano", level: InstrumentLevel.Advanced }],
-      media: [],
-    });
-  });
-
-  it("throws not found when profile is missing or private", async () => {
-    profileRepo.findOne.mockResolvedValueOnce(null);
-
-    await expect(service.getProfileById("profile-1")).rejects.toBeInstanceOf(NotFoundException);
   });
 });

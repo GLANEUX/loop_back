@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -72,10 +73,12 @@ export class UsersService {
   }
 
   private formatProfile(profile: Profile) {
-    const { genres, instruments, avatar, media, ...rest } = profile;
+    const { genres, instruments, media, avatarMediaId, featuredAudioId, ...rest } = profile;
     return {
       ...rest,
-      hasAvatar: Boolean(avatar),
+      avatarMediaId,
+      featuredAudioId,
+      hasAvatar: Boolean(avatarMediaId),
       genres:
         genres
           ?.map((profileGenre) => profileGenre.genre?.name)
@@ -97,6 +100,8 @@ export class UsersService {
       media:
         media
           ?.sort((a, b) => a.order - b.order)
+          // Hide avatar from generic media gallery
+          .filter((m) => m.id !== avatarMediaId)
           .map((m) => ({
             id: m.id,
             type: m.type,
@@ -133,6 +138,7 @@ export class UsersService {
         profile: {
           genres: { genre: true },
           instruments: { instrument: true },
+          media: true,
         },
       },
     });
@@ -344,31 +350,10 @@ export class UsersService {
       relations: {
         genres: { genre: true },
         instruments: { instrument: true },
+        media: true,
       },
     });
     return profiles.map((profile) => this.formatProfile(profile));
-  }
-
-  async updateAvatarForUser(userId: string, avatar: Buffer | null) {
-    const user = await this.requireUserWithRole(userId);
-    if (user.role === UserRole.Admin) {
-      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
-    }
-
-    let profileEntity: Profile;
-    if (user.profile) {
-      profileEntity = user.profile;
-    } else {
-      const created = this.profileRepo.create({
-        userId: user.id,
-        isPublic: true,
-      });
-      profileEntity = await this.profileRepo.save(created);
-    }
-
-    profileEntity.avatar = avatar;
-    await this.profileRepo.save(profileEntity);
-    return { ok: true };
   }
 
   async getAvatarForUser(userId: string) {
@@ -377,19 +362,14 @@ export class UsersService {
       throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
     }
 
-    if (!user.profile) {
+    if (!user.profile?.avatarMediaId) {
       return null;
     }
 
-    const profile = await this.profileRepo.findOne({
-      where: { id: user.profile.id },
+    return this.profileMediaRepo.findOne({
+      where: { id: user.profile.avatarMediaId },
+      select: ["data", "mimeType"],
     });
-
-    if (!profile?.avatar) {
-      return null;
-    }
-
-    return profile.avatar;
   }
 
   async getAvatarForProfile(profileId: string) {
@@ -397,11 +377,29 @@ export class UsersService {
       where: { id: profileId, isPublic: true, deletedAt: IsNull() },
     });
 
-    if (!profile?.avatar) {
+    if (!profile?.avatarMediaId) {
       return null;
     }
 
-    return profile.avatar;
+    return this.profileMediaRepo.findOne({
+      where: { id: profile.avatarMediaId },
+      select: ["data", "mimeType"],
+    });
+  }
+
+  async getFeaturedAudioForProfile(profileId: string) {
+    const profile = await this.profileRepo.findOne({
+      where: { id: profileId, isPublic: true, deletedAt: IsNull() },
+    });
+
+    if (!profile?.featuredAudioId) {
+      return null;
+    }
+
+    return this.profileMediaRepo.findOne({
+      where: { id: profile.featuredAudioId },
+      select: ["data", "mimeType"],
+    });
   }
 
   async listGenres() {
@@ -412,30 +410,41 @@ export class UsersService {
     return this.instrumentRepo.find({ order: { name: "ASC" } });
   }
 
+  private async getOrCreateProfile(userId: string): Promise<Profile> {
+    const user = await this.requireUserWithRole(userId);
+    if (user.role === UserRole.Admin) {
+      throw new ForbiddenException("Les admins n'ont pas de profil utilisateur");
+    }
+    if (user.profile) {
+      return user.profile;
+    }
+    const created = this.profileRepo.create({
+      userId: user.id,
+      isPublic: true,
+    });
+    return this.profileRepo.save(created);
+  }
+
   async addProfileMedia(
     userId: string,
     data: Buffer,
     mimeType: string,
     type: ProfileMediaType,
     title?: string,
+    options?: { isAvatar?: boolean; isFeatured?: boolean },
   ) {
-    const user = await this.requireUserWithRole(userId);
-    let profileId: string;
-    if (user.profile) {
-      profileId = user.profile.id;
-    } else {
-      const created = this.profileRepo.create({
-        userId: user.id,
-        isPublic: true,
-      });
-      const saved = await this.profileRepo.save(created);
-      profileId = saved.id;
+    const profile = await this.getOrCreateProfile(userId);
+
+    // If it's a replacement for avatar, we might want to delete the old one
+    let oldAvatarId: string | null = null;
+    if (options?.isAvatar && type === ProfileMediaType.Image) {
+      oldAvatarId = profile.avatarMediaId ?? null;
     }
 
-    const count = await this.profileMediaRepo.count({ where: { profileId } });
+    const count = await this.profileMediaRepo.count({ where: { profileId: profile.id } });
 
     const media = this.profileMediaRepo.create({
-      profileId,
+      profileId: profile.id,
       data,
       mimeType,
       type,
@@ -443,7 +452,40 @@ export class UsersService {
       order: count,
     });
 
-    return this.profileMediaRepo.save(media);
+    const savedMedia = await this.profileMediaRepo.save(media);
+
+    // Update profile pointers
+    if (options?.isAvatar && type === ProfileMediaType.Image) {
+      await this.profileRepo.update(profile.id, { avatarMediaId: savedMedia.id });
+      // Physical deletion of old avatar media to avoid orphans
+      if (oldAvatarId) {
+        await this.profileMediaRepo.delete(oldAvatarId);
+      }
+    }
+
+    if (options?.isFeatured && type === ProfileMediaType.Audio) {
+      await this.profileRepo.update(profile.id, { featuredAudioId: savedMedia.id });
+    }
+
+    return savedMedia;
+  }
+
+  async setFeaturedAudio(userId: string, mediaId: string | null) {
+    const profile = await this.getOrCreateProfile(userId);
+
+    if (mediaId) {
+      const media = await this.profileMediaRepo.findOne({
+        where: { id: mediaId, profileId: profile.id, type: ProfileMediaType.Audio },
+      });
+      if (!media) {
+        throw new BadRequestException(
+          "Média introuvable, ne vous appartient pas ou n'est pas un audio",
+        );
+      }
+    }
+
+    await this.profileRepo.update(profile.id, { featuredAudioId: mediaId });
+    return { ok: true };
   }
 
   async getProfileMedia(id: string) {
@@ -454,6 +496,21 @@ export class UsersService {
     if (!media) {
       throw new NotFoundException("Média introuvable");
     }
+    return media;
+  }
+
+  async listProfileMedia(userId: string, type: ProfileMediaType) {
+    const profile = await this.getOrCreateProfile(userId);
+    const media = await this.profileMediaRepo.find({
+      where: { profileId: profile.id, type },
+      order: { order: "ASC" },
+    });
+
+    // For images, exclude the current avatar
+    if (type === ProfileMediaType.Image) {
+      return media.filter((m) => m.id !== profile.avatarMediaId);
+    }
+
     return media;
   }
 
@@ -471,7 +528,22 @@ export class UsersService {
       throw new NotFoundException("Média introuvable ou vous n'êtes pas le propriétaire");
     }
 
+    // FKs will be set to NULL automatically by DB (ON DELETE SET NULL)
     await this.profileMediaRepo.remove(media);
+    return { ok: true };
+  }
+
+  async deleteAvatar(userId: string) {
+    const profile = await this.getOrCreateProfile(userId);
+    if (!profile.avatarMediaId) {
+      return { ok: true };
+    }
+
+    const mediaId = profile.avatarMediaId;
+    // Clearing the FK first is safer, although ON DELETE SET NULL would handle it
+    await this.profileRepo.update(profile.id, { avatarMediaId: null });
+    await this.profileMediaRepo.delete(mediaId);
+
     return { ok: true };
   }
 

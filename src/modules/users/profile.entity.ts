@@ -44,8 +44,19 @@ export class Profile {
   @Column({ type: "text", nullable: true })
   bio?: string | null;
 
-  @Column({ type: "bytea", name: "avatar", nullable: true })
-  avatar?: Buffer | null;
+  @Column({ type: "uuid", name: "avatar_media_id", nullable: true })
+  avatarMediaId?: string | null;
+
+  @OneToOne(() => ProfileMedia, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "avatar_media_id" })
+  avatarMedia?: ProfileMedia | null;
+
+  @Column({ type: "uuid", name: "featured_audio_id", nullable: true })
+  featuredAudioId?: string | null;
+
+  @OneToOne(() => ProfileMedia, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "featured_audio_id" })
+  featuredAudio?: ProfileMedia | null;
 
   @Column({ type: "boolean", name: "is_public", default: true })
   isPublic!: boolean;

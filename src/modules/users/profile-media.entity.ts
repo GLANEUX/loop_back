@@ -12,6 +12,7 @@ import { Profile } from "./profile.entity";
 export enum ProfileMediaType {
   Image = "image",
   Audio = "audio",
+  Video = "video",
 }
 
 @Entity("profile_media")
