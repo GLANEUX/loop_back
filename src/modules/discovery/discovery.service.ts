@@ -75,10 +75,17 @@ export class DiscoveryService {
       gender: profile.gender ?? null,
       birthDate: profile.birthDate ?? null,
       bio: profile.bio ?? null,
-      hasAvatar: Boolean(profile.avatar),
+      city: profile.city ?? null,
+      country: profile.country ?? null,
+      hasAvatar: Boolean(profile.avatarMediaId),
       genres,
       instruments,
       audio,
+      socialLinks:
+        profile.socialLinks?.map((link) => ({
+          platform: link.platform,
+          url: link.url,
+        })) ?? [],
     };
   }
 
@@ -110,12 +117,16 @@ export class DiscoveryService {
         genres: { genre: true },
         instruments: { instrument: true },
         media: true,
+        socialLinks: true,
       },
       order: { createdAt: "DESC" },
-      take: cappedLimit,
+      take: cappedLimit * 2, // Take more to account for invalid profiles filtering
     });
 
-    return profiles.map((profile) => this.formatProfileCard(profile));
+    return profiles
+      .filter((profile) => Profile.validateProfile(profile).isValid)
+      .slice(0, cappedLimit)
+      .map((profile) => this.formatProfileCard(profile));
   }
 
   async swipe(userId: string, targetProfileId: string, isLike: boolean) {
@@ -212,6 +223,7 @@ export class DiscoveryService {
         genres: { genre: true },
         instruments: { instrument: true },
         media: true,
+        socialLinks: true,
       },
     });
 
@@ -260,6 +272,7 @@ export class DiscoveryService {
         genres: { genre: true },
         instruments: { instrument: true },
         media: true,
+        socialLinks: true,
       },
     });
     const profileById = new Map(profiles.map((profile) => [profile.id, profile]));

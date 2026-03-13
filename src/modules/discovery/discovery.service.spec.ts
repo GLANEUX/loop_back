@@ -95,13 +95,17 @@ describe("DiscoveryService", () => {
         user: { pseudo: "loopster" },
         genres: [{ genre: { name: "Rock" } }],
         instruments: [{ instrument: { name: "Guitar" }, level: InstrumentLevel.Beginner }],
-        avatar: null,
+        avatarMediaId: "avatar-id",
         firstName: "Ada",
         lastName: null,
-        gender: null,
-        birthDate: null,
-        bio: null,
-      } as Profile,
+        gender: "Female",
+        birthDate: "1990-01-01",
+        bio: "Bio",
+        city: "Paris",
+        country: "France",
+        socialLinks: [],
+        media: [],
+      } as any,
     ]);
 
     const result = await service.getQueue("user-1", 10);
@@ -112,13 +116,16 @@ describe("DiscoveryService", () => {
         pseudo: "loopster",
         firstName: "Ada",
         lastName: null,
-        gender: null,
-        birthDate: null,
-        bio: null,
-        hasAvatar: false,
+        gender: "Female",
+        birthDate: "1990-01-01",
+        bio: "Bio",
+        city: "Paris",
+        country: "France",
+        hasAvatar: true,
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
         audio: [],
+        socialLinks: [],
       },
     ]);
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -126,7 +133,7 @@ describe("DiscoveryService", () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(profileRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 10,
+        take: 20,
         where: expect.objectContaining({
           isPublic: true,
           user: { role: UserRole.User, deletedAt: expect.anything() },
@@ -299,8 +306,11 @@ describe("DiscoveryService", () => {
         user: { pseudo: "liked-user" },
         genres: [],
         instruments: [],
-        avatar: null,
-      } as unknown as Profile,
+        avatarMediaId: null,
+        socialLinks: [],
+        city: null,
+        country: null,
+      } as any,
     ]);
 
     const result = await service.listSwipes("user-1", true);

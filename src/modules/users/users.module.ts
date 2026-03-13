@@ -6,6 +6,7 @@ import { InstrumentEntity } from "./instrument.entity";
 import { Profile } from "./profile.entity";
 import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
+import { SocialLink } from "./social-link.entity";
 import { User } from "./user.entity";
 import { CatalogController } from "./catalog.controller";
 import { UsersController } from "./users.controller";
@@ -25,6 +26,7 @@ import { MediaController } from "./media.controller";
       ProfileGenre,
       ProfileInstrument,
       ProfileMedia,
+      SocialLink,
     ]),
     forwardRef(() => AuthModule),
   ],

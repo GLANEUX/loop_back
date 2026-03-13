@@ -13,6 +13,7 @@ import { User } from "./user.entity";
 import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
 import { ProfileMedia } from "./profile-media.entity";
+import { SocialLink } from "./social-link.entity";
 
 @Entity("profiles")
 export class Profile {
@@ -61,6 +62,18 @@ export class Profile {
   @Column({ type: "boolean", name: "is_public", default: true })
   isPublic!: boolean;
 
+  @Column({ type: "varchar", length: 120, nullable: true })
+  city?: string | null;
+
+  @Column({ type: "varchar", length: 120, nullable: true })
+  country?: string | null;
+
+  @Column({ type: "double precision", nullable: true })
+  lat?: number | null;
+
+  @Column({ type: "double precision", nullable: true })
+  lon?: number | null;
+
   @OneToMany(() => ProfileInstrument, (instrument) => instrument.profile, {
     cascade: true,
   })
@@ -74,6 +87,11 @@ export class Profile {
   @OneToMany(() => ProfileMedia, (media) => media.profile)
   media?: ProfileMedia[];
 
+  @OneToMany(() => SocialLink, (socialLink) => socialLink.profile, {
+    cascade: true,
+  })
+  socialLinks?: SocialLink[];
+
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt!: Date;
 
@@ -82,4 +100,37 @@ export class Profile {
 
   @DeleteDateColumn({ type: "timestamptz", name: "deleted_at" })
   deletedAt?: Date | null;
+
+  /**
+   * Validates if a profile is complete according to business rules.
+   * A profile is valid if it has:
+   * - firstName, bio, birthDate, gender, avatarMediaId
+   * - city, country (location)
+   * - At least one genre
+   * - At least one instrument
+   */
+  static validateProfile(profile: Partial<Profile>): { isValid: boolean; missingFields: string[] } {
+    const missingFields: string[] = [];
+
+    if (!profile.firstName?.trim()) missingFields.push("firstName");
+    if (!profile.bio?.trim()) missingFields.push("bio");
+    if (!profile.birthDate) missingFields.push("birthDate");
+    if (!profile.gender?.trim()) missingFields.push("gender");
+    if (!profile.avatarMediaId) missingFields.push("avatar");
+    if (!profile.city?.trim()) missingFields.push("city");
+    if (!profile.country?.trim()) missingFields.push("country");
+
+    if (!profile.genres || profile.genres.length === 0) {
+      missingFields.push("genres");
+    }
+
+    if (!profile.instruments || profile.instruments.length === 0) {
+      missingFields.push("instruments");
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields,
+    };
+  }
 }

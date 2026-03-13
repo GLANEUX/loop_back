@@ -16,7 +16,6 @@
 
     /* Aliases confortables */
     "baseUrl": "./",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@modules/*": ["src/modules/*"],
       "@config/*": ["src/config/*"],

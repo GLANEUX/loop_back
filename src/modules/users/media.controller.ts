@@ -11,233 +11,133 @@ import {
   Res,
   BadRequestException,
   Body,
-  Put,
   Patch,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response, Request } from "express";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { AuthGuard } from "@modules/auth/auth.guard";
 import { UsersService } from "./users.service";
 import { ProfileMediaType } from "./profile-media.entity";
 
+@ApiTags("User Media")
 @Controller("user")
 export class MediaController {
   constructor(private readonly usersService: UsersService) {}
 
-  // --- GALLERY ENDPOINTS ---
-
-  @Get("me/media/images")
   @UseGuards(AuthGuard)
-  async getMyImages(@Req() req: Request) {
-    return this.usersService.listProfileMedia(req.user!.id, ProfileMediaType.Image);
-  }
-
-  @Get("me/media/audios")
-  @UseGuards(AuthGuard)
-  async getMyAudios(@Req() req: Request) {
-    return this.usersService.listProfileMedia(req.user!.id, ProfileMediaType.Audio);
-  }
-
-  @Get("me/media/videos")
-  @UseGuards(AuthGuard)
-  async getMyVideos(@Req() req: Request) {
-    return this.usersService.listProfileMedia(req.user!.id, ProfileMediaType.Video);
-  }
-
-  @Post("me/media/image")
-  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Upload a new profile media (image or audio)" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        file: { type: "string", format: "binary" },
+        type: { type: "string", enum: Object.values(ProfileMediaType) },
+        title: { type: "string" },
+        isAvatar: { type: "boolean" },
+        isFeatured: { type: "boolean" },
+      },
+      required: ["file", "type"],
+    },
+  })
+  @Post("media")
   @UseInterceptors(FileInterceptor("file"))
-  async uploadImage(
-    @Req() req: Request,
+  async uploadMedia(
     @UploadedFile() file: Express.Multer.File,
-    @Body("title") title?: string,
-    @Body("isAvatar") isAvatar?: string | boolean,
+    @Body("type") type: ProfileMediaType,
+    @Body("title") title: string,
+    @Body("isAvatar") isAvatar: string,
+    @Body("isFeatured") isFeatured: string,
+    @Req() request: Request,
   ) {
-    this.validateFile(file, ["image/jpeg", "image/png", "image/webp"], 5 * 1024 * 1024);
-    
-    const media = await this.usersService.addProfileMedia(
-      req.user!.id,
+    if (!file) {
+      throw new BadRequestException("Fichier manquant");
+    }
+
+    const options = {
+      isAvatar: isAvatar === "true",
+      isFeatured: isFeatured === "true",
+    };
+
+    const allowedMimeTypes =
+      type === ProfileMediaType.Image
+        ? ["image/jpeg", "image/png", "image/webp"]
+        : ["audio/mpeg", "audio/wav", "audio/ogg", "audio/aac"];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Format de fichier invalide. Attendu: ${allowedMimeTypes.join(", ")}`,
+      );
+    }
+
+    const saved = await this.usersService.addProfileMedia(
+      request.user!.id,
       file.buffer,
       file.mimetype,
-      ProfileMediaType.Image,
+      type,
       title,
-      { isAvatar: isAvatar === "true" || isAvatar === true },
+      options,
     );
 
-    return this.formatMediaResponse(media);
+    return {
+      id: saved.id,
+      type: saved.type,
+      title: saved.title,
+      mimeType: saved.mimeType,
+      order: saved.order,
+      createdAt: saved.createdAt,
+      url: `/user/media/${saved.id}`,
+    };
   }
 
-  @Post("me/media/audio")
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  async uploadAudio(
-    @Req() req: Request,
-    @UploadedFile() file: Express.Multer.File,
-    @Body("title") title?: string,
-    @Body("isFeatured") isFeatured?: string | boolean,
-  ) {
-    this.validateFile(file, ["audio/mpeg", "audio/wav", "audio/ogg", "audio/aac"], 15 * 1024 * 1024);
-
-    const media = await this.usersService.addProfileMedia(
-      req.user!.id,
-      file.buffer,
-      file.mimetype,
-      ProfileMediaType.Audio,
-      title,
-      { isFeatured: isFeatured === "true" || isFeatured === true },
-    );
-
-    return this.formatMediaResponse(media);
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List current user's media by type" })
+  @Get("media/list/:type")
+  async listMyMedia(@Param("type") type: ProfileMediaType, @Req() request: Request) {
+    return this.usersService.listProfileMedia(request.user!.id, type);
   }
 
-  @Post("me/media/video")
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  async uploadVideo(
-    @Req() req: Request,
-    @UploadedFile() file: Express.Multer.File,
-    @Body("title") title?: string,
-  ) {
-    this.validateFile(file, ["video/mp4", "video/webm"], 50 * 1024 * 1024);
-
-    const media = await this.usersService.addProfileMedia(
-      req.user!.id,
-      file.buffer,
-      file.mimetype,
-      ProfileMediaType.Video,
-      title,
-    );
-
-    return this.formatMediaResponse(media);
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Set an existing audio as featured" })
+  @Patch("media/featured-audio/:id")
+  async setFeaturedAudio(@Param("id") mediaId: string, @Req() request: Request) {
+    return this.usersService.setFeaturedAudio(request.user!.id, mediaId);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Unset featured audio" })
+  @Delete("media/featured-audio")
+  async unsetFeaturedAudio(@Req() request: Request) {
+    return this.usersService.setFeaturedAudio(request.user!.id, null);
+  }
+
+  @ApiOperation({ summary: "Get a profile media content" })
+  @ApiResponse({ status: 200, description: "The media content" })
   @Get("media/:id")
   async getMedia(@Param("id") id: string, @Res() res: Response) {
     const media = await this.usersService.getProfileMedia(id);
     res.setHeader("Content-Type", media.mimeType);
-    res.setHeader("Cache-Control", "public, max-age=31536000");
-    res.send(media.data);
+    return res.send(media.data);
   }
 
-  @Delete("me/media/:id")
   @UseGuards(AuthGuard)
-  async deleteMedia(@Req() req: Request, @Param("id") id: string) {
-    return this.usersService.deleteProfileMedia(req.user!.id, id);
-  }
-
-  // --- AVATAR ENDPOINTS ---
-
-  @Get("me/avatar")
-  @UseGuards(AuthGuard)
-  async getMyAvatar(@Req() req: Request, @Res() res: Response) {
-    const media = await this.usersService.getAvatarForUser(req.user!.id);
-    if (!media) {
-      return res.status(404).send();
-    }
-    res.setHeader("Content-Type", media.mimeType);
-    res.send(media.data);
-  }
-
-  @Get("profiles/:profileId/avatar")
-  async getProfileAvatar(@Param("profileId") profileId: string, @Res() res: Response) {
-    const media = await this.usersService.getAvatarForProfile(profileId);
-    if (!media) {
-      return res.status(404).send();
-    }
-    res.setHeader("Content-Type", media.mimeType);
-    res.send(media.data);
-  }
-
-  @Post("me/avatar")
-  @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  async createAvatar(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
-    const profile = await this.usersService.getProfileForUser(req.user!.id);
-    if (profile.avatarMediaId) {
-      throw new BadRequestException("Un avatar existe déjà. Utilisez PUT pour le remplacer.");
-    }
-    return this.uploadImage(req, file, "Avatar", true);
-  }
-
-  @Put("me/avatar")
-  @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  async replaceAvatar(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
-    return this.uploadImage(req, file, "Avatar", true);
-  }
-
-  @Delete("me/avatar")
-  @UseGuards(AuthGuard)
-  async deleteAvatar(@Req() req: Request) {
-    return this.usersService.deleteAvatar(req.user!.id);
-  }
-
-  // --- FEATURED AUDIO ENDPOINTS ---
-
-  @Get("me/featured-audio")
-  @UseGuards(AuthGuard)
-  async getMyFeaturedAudio(@Req() req: Request, @Res() res: Response) {
-    const profile = await this.usersService.getProfileForUser(req.user!.id);
-    if (!profile.featuredAudioId) {
-      return res.status(404).send();
-    }
-    const media = await this.usersService.getProfileMedia(profile.featuredAudioId);
-    res.setHeader("Content-Type", media.mimeType);
-    res.send(media.data);
-  }
-
-  @Get("profiles/:profileId/featured-audio")
-  async getProfileFeaturedAudio(@Param("profileId") profileId: string, @Res() res: Response) {
-    const media = await this.usersService.getFeaturedAudioForProfile(profileId);
-    if (!media) {
-      return res.status(404).send();
-    }
-    res.setHeader("Content-Type", media.mimeType);
-    res.send(media.data);
-  }
-
-  @Post("me/featured-audio")
-  @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  async uploadFeaturedAudio(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
-    return this.uploadAudio(req, file, "Featured Audio", true);
-  }
-
-  @Patch("me/featured-audio/:id")
-  @UseGuards(AuthGuard)
-  async setFeaturedAudio(@Req() req: Request, @Param("id") id: string) {
-    return this.usersService.setFeaturedAudio(req.user!.id, id);
-  }
-
-  @Delete("me/featured-audio")
-  @UseGuards(AuthGuard)
-  async unsetFeaturedAudio(@Req() req: Request) {
-    return this.usersService.setFeaturedAudio(req.user!.id, null);
-  }
-
-  // --- HELPERS ---
-
-  private validateFile(file: Express.Multer.File, allowedMimeTypes: string[], maxSize: number) {
-    if (!file) {
-      throw new BadRequestException("Aucun fichier fourni");
-    }
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(`Format de fichier invalide. Attendu: ${allowedMimeTypes.join(", ")}`);
-    }
-    if (file.size > maxSize) {
-      throw new BadRequestException(`Fichier trop volumineux (max ${maxSize / (1024 * 1024)}Mo)`);
-    }
-  }
-
-  private formatMediaResponse(media: any) {
-    return {
-      id: media.id,
-      type: media.type,
-      title: media.title,
-      mimeType: media.mimeType,
-      order: media.order,
-      createdAt: media.createdAt,
-      url: `/user/media/${media.id}`,
-    };
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Delete a profile media" })
+  @Delete("media/:id")
+  async deleteMedia(@Param("id") id: string, @Req() request: Request) {
+    await this.usersService.deleteProfileMedia(request.user!.id, id);
+    return { ok: true };
   }
 }

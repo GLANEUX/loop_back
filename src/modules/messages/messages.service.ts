@@ -553,7 +553,7 @@ export class MessagesService {
       gender: profile.gender ?? null,
       birthDate: profile.birthDate ?? null,
       bio: profile.bio ?? null,
-      hasAvatar: Boolean(profile.avatar),
+      hasAvatar: Boolean(profile.avatarMediaId),
       genres,
       instruments,
     };

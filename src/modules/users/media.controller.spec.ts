@@ -39,7 +39,7 @@ describe("MediaController", () => {
       .compile();
 
     controller = moduleRef.get(MediaController);
-    usersService = moduleRef.get(UsersService) as any;
+    usersService = moduleRef.get(UsersService);
   });
 
   describe("Upload Endpoints", () => {
@@ -51,7 +51,10 @@ describe("MediaController", () => {
 
     it("uploads an image correctly", async () => {
       const req = { user: { id: "u1" } } as any;
-      usersService.addProfileMedia.mockResolvedValueOnce({ id: "m1", type: ProfileMediaType.Image } as any);
+      usersService.addProfileMedia.mockResolvedValueOnce({
+        id: "m1",
+        type: ProfileMediaType.Image,
+      } as any);
 
       const result = await controller.uploadImage(req, mockFile, "Title", "true");
 
@@ -87,7 +90,10 @@ describe("MediaController", () => {
         setHeader: jest.fn(),
         send: jest.fn(),
       } as any;
-      usersService.getAvatarForProfile.mockResolvedValueOnce({ data: Buffer.from("data"), mimeType: "image/png" } as any);
+      usersService.getAvatarForProfile.mockResolvedValueOnce({
+        data: Buffer.from("data"),
+        mimeType: "image/png",
+      } as any);
 
       await controller.getProfileAvatar("p1", res);
 

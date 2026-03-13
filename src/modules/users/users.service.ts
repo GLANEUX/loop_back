@@ -12,8 +12,9 @@ import { InstrumentEntity } from "./instrument.entity";
 import { Profile } from "./profile.entity";
 import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
+import { SocialLink } from "./social-link.entity";
 import { User } from "./user.entity";
-import { InstrumentLevel } from "./profile.enums";
+import { InstrumentLevel, SocialPlatform } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 
 import { ProfileMedia, ProfileMediaType } from "./profile-media.entity";
@@ -35,6 +36,8 @@ export class UsersService {
     private readonly profileInstrumentRepo: Repository<ProfileInstrument>,
     @InjectRepository(ProfileMedia)
     private readonly profileMediaRepo: Repository<ProfileMedia>,
+    @InjectRepository(SocialLink)
+    private readonly socialLinkRepo: Repository<SocialLink>,
   ) {}
 
   async findByEmail(email: string) {
@@ -68,17 +71,23 @@ export class UsersService {
         genres: { genre: true },
         instruments: { instrument: true },
         media: true,
+        socialLinks: true,
       },
     });
   }
 
   private formatProfile(profile: Profile) {
-    const { genres, instruments, media, avatarMediaId, featuredAudioId, ...rest } = profile;
+    const { genres, instruments, media, socialLinks, avatarMediaId, featuredAudioId, ...rest } =
+      profile;
+    const validation = Profile.validateProfile(profile);
+
     return {
       ...rest,
       avatarMediaId,
       featuredAudioId,
       hasAvatar: Boolean(avatarMediaId),
+      isValid: validation.isValid,
+      missingFields: validation.missingFields,
       genres:
         genres
           ?.map((profileGenre) => profileGenre.genre?.name)
@@ -97,6 +106,11 @@ export class UsersService {
             (instrument): instrument is { instrument: string; level: InstrumentLevel } =>
               instrument !== null,
           ) ?? [],
+      socialLinks:
+        socialLinks?.map((link) => ({
+          platform: link.platform,
+          url: link.url,
+        })) ?? [],
       media:
         media
           ?.sort((a, b) => a.order - b.order)
@@ -228,11 +242,22 @@ export class UsersService {
     updates: Partial<
       Pick<
         Profile,
-        "bio" | "isPublic" | "firstName" | "lastName" | "phoneNumber" | "birthDate" | "gender"
+        | "bio"
+        | "isPublic"
+        | "firstName"
+        | "lastName"
+        | "phoneNumber"
+        | "birthDate"
+        | "gender"
+        | "city"
+        | "country"
+        | "lat"
+        | "lon"
       >
     > & {
       genres?: string[];
       instruments?: { instrument: string; level: InstrumentLevel }[];
+      socialLinks?: { platform: SocialPlatform; url: string }[];
     },
   ) {
     const user = await this.requireUserWithRole(userId);
@@ -250,7 +275,7 @@ export class UsersService {
       });
       profileEntity = await this.profileRepo.save(created);
     }
-    const { genres, instruments, ...profileUpdates } = updates;
+    const { genres, instruments, socialLinks, ...profileUpdates } = updates;
 
     if (Object.keys(profileUpdates).length > 0) {
       const merged = this.profileRepo.merge(profileEntity, profileUpdates);
@@ -338,6 +363,20 @@ export class UsersService {
 
       if (instrumentLinks.length > 0) {
         await this.profileInstrumentRepo.save(instrumentLinks);
+      }
+    }
+
+    if (socialLinks) {
+      await this.socialLinkRepo.delete({ profileId: profileEntity.id });
+      if (socialLinks.length > 0) {
+        const links = socialLinks.map((link) =>
+          this.socialLinkRepo.create({
+            profileId: profileEntity.id,
+            platform: link.platform,
+            url: link.url,
+          }),
+        );
+        await this.socialLinkRepo.save(links);
       }
     }
 
@@ -468,6 +507,20 @@ export class UsersService {
     }
 
     return savedMedia;
+  }
+
+  async updateAvatarForUser(userId: string, data: Buffer) {
+    await this.addProfileMedia(
+      userId,
+      data,
+      "application/octet-stream",
+      ProfileMediaType.Image,
+      "Avatar",
+      {
+        isAvatar: true,
+      },
+    );
+    return { ok: true };
   }
 
   async setFeaturedAudio(userId: string, mediaId: string | null) {

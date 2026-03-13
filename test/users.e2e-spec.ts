@@ -115,6 +115,48 @@ describe("Users (e2e)", () => {
     ]);
   });
 
+  it("updates profile with localization and social links", async () => {
+    const server = app.getHttpServer();
+
+    const registerRes = await request(server)
+      .post("/auth/register")
+      .send(registerPayload("loc@loop.local"))
+      .expect(201);
+
+    const token = registerRes.body.accessToken;
+
+    await request(server)
+      .patch("/user/me/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        city: "Lyon",
+        country: "France",
+        lat: 45.764,
+        lon: 4.8357,
+        socialLinks: [
+          { platform: "instagram", url: "https://instagram.com/musician" },
+          { platform: "spotify", url: "https://open.spotify.com/artist/id" },
+        ],
+      })
+      .expect(200);
+
+    const profileRes = await request(server)
+      .get("/user/me/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(profileRes.body.city).toBe("Lyon");
+    expect(profileRes.body.country).toBe("France");
+    expect(profileRes.body.lat).toBe(45.764);
+    expect(profileRes.body.lon).toBe(4.8357);
+    expect(profileRes.body.socialLinks).toEqual(
+      expect.arrayContaining([
+        { platform: "instagram", url: "https://instagram.com/musician" },
+        { platform: "spotify", url: "https://open.spotify.com/artist/id" },
+      ]),
+    );
+  });
+
   it("forbids profile access for admins", async () => {
     const server = app.getHttpServer();
 

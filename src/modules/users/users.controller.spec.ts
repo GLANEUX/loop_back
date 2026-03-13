@@ -268,4 +268,21 @@ describe("UsersController", () => {
     expect(usersService.getProfileById).toHaveBeenCalledWith("profile-1");
     expect(result).toEqual(mockProfile);
   });
+
+  it("accepts profile updates with localization and social links", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+    usersService.updateProfileForUser.mockResolvedValueOnce({ id: "profile-1" });
+
+    const updateData = {
+      city: "Lyon",
+      country: "France",
+      lat: 45.764,
+      lon: 4.8357,
+      socialLinks: [{ platform: "instagram", url: "https://instagram.com/musician" }],
+    };
+
+    await controller.updateMyProfile(updateData, request);
+
+    expect(usersService.updateProfileForUser).toHaveBeenCalledWith("user-1", updateData);
+  });
 });
