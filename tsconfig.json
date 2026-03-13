@@ -16,6 +16,7 @@
 
     /* Aliases confortables */
     "baseUrl": "./",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@modules/*": ["src/modules/*"],
       "@config/*": ["src/config/*"],
@@ -36,3 +37,5 @@
   "include": ["src/**/*.ts", "src/types/**/*.d.ts", "db/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
+
+

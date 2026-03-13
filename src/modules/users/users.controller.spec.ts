@@ -1,6 +1,6 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { AuthGuard } from "@modules/auth/auth.guard";
 import { UserRole } from "./user-role.enum";
 import { InstrumentLevel } from "./profile.enums";
@@ -9,25 +9,39 @@ import { UsersService } from "./users.service";
 
 describe("UsersController", () => {
   let controller: UsersController;
-  let usersService: jest.Mocked<UsersService>;
+  let usersService: Record<keyof UsersService, jest.Mock>;
 
   beforeEach(async () => {
+    const mockUsersService: Record<string, jest.Mock> = {
+      softDeleteById: jest.fn(),
+      findWithProfileById: jest.fn(),
+      getProfileForUser: jest.fn(),
+      updateProfileForUser: jest.fn(),
+      updateAvatarForUser: jest.fn(),
+      getAvatarForUser: jest.fn(),
+      getAvatarForProfile: jest.fn(),
+      listProfiles: jest.fn(),
+      getProfileById: jest.fn(),
+      updateEmailById: jest.fn(),
+      updatePseudoById: jest.fn(),
+      findByEmail: jest.fn(),
+      findByPseudo: jest.fn(),
+      findById: jest.fn(),
+      createUser: jest.fn(),
+      listGenres: jest.fn(),
+      listInstruments: jest.fn(),
+      addProfileMedia: jest.fn(),
+      getProfileMedia: jest.fn(),
+      deleteProfileMedia: jest.fn(),
+      updatePasswordById: jest.fn(),
+    };
+
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
         {
           provide: UsersService,
-          useValue: {
-            softDeleteById: jest.fn(),
-            findWithProfileById: jest.fn(),
-            getProfileForUser: jest.fn(),
-            updateProfileForUser: jest.fn(),
-            updateAvatarForUser: jest.fn(),
-            getAvatarForProfile: jest.fn(),
-            listProfiles: jest.fn(),
-            updateEmailById: jest.fn(),
-            updatePseudoById: jest.fn(),
-          },
+          useValue: mockUsersService,
         },
       ],
     })
@@ -36,7 +50,7 @@ describe("UsersController", () => {
       .compile();
 
     controller = moduleRef.get(UsersController);
-    usersService = moduleRef.get(UsersService);
+    usersService = moduleRef.get(UsersService) as unknown as Record<keyof UsersService, jest.Mock>;
   });
 
   it("returns current user with profile for role=user", async () => {
@@ -44,23 +58,18 @@ describe("UsersController", () => {
       user: { id: "user-1" },
     } as Request;
 
-    usersService.findWithProfileById.mockResolvedValueOnce({
+    const mockUser = {
       id: "user-1",
       email: "test@loop.local",
       pseudo: "ada",
       role: UserRole.User,
       profile: { id: "profile-1", isPublic: true },
-    } as any);
+    };
+    usersService.findWithProfileById.mockResolvedValueOnce(mockUser);
 
     const result = await controller.getMe(request);
 
-    expect(result).toEqual({
-      id: "user-1",
-      email: "test@loop.local",
-      pseudo: "ada",
-      role: UserRole.User,
-      profile: { id: "profile-1", isPublic: true },
-    });
+    expect(result).toEqual(mockUser);
   });
 
   it("returns undefined when no authenticated user is present", async () => {
@@ -73,27 +82,22 @@ describe("UsersController", () => {
 
   it("returns base user for admins without profile", async () => {
     const request = { user: { id: "admin-1" } } as Request;
-    usersService.findWithProfileById.mockResolvedValueOnce({
+    const mockAdmin = {
       id: "admin-1",
       email: "admin@loop.local",
       role: UserRole.Admin,
       pseudo: "admin",
-    } as any);
+    };
+    usersService.findWithProfileById.mockResolvedValueOnce(mockAdmin);
 
     const result = await controller.getMe(request);
 
-    expect(result).toEqual({
-      id: "admin-1",
-      email: "admin@loop.local",
-      role: UserRole.Admin,
-      pseudo: "admin",
-    });
+    expect(result).toEqual(mockAdmin);
   });
 
   it("soft deletes current user", async () => {
     const request = { user: { id: "user-1" } } as Request;
     const result = await controller.softDeleteMe(request);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.softDeleteById).toHaveBeenCalledWith("user-1");
     expect(result).toEqual({ ok: true });
   });
@@ -106,9 +110,7 @@ describe("UsersController", () => {
       request,
     );
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.updateEmailById).toHaveBeenCalledWith("user-1", "new@loop.local");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.updatePseudoById).toHaveBeenCalledWith("user-1", "NewPseudo");
     expect(result).toEqual({ ok: true });
   });
@@ -139,21 +141,16 @@ describe("UsersController", () => {
 
   it("accepts profile updates with genres and instruments", async () => {
     const request = { user: { id: "user-1" } } as Request;
-    usersService.updateProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as any);
+    usersService.updateProfileForUser.mockResolvedValueOnce({ id: "profile-1" });
 
-    await controller.updateMyProfile(
-      {
-        genres: ["Rock", "Jazz"],
-        instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
-      },
-      request,
-    );
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(usersService.updateProfileForUser).toHaveBeenCalledWith("user-1", {
+    const updateData = {
       genres: ["Rock", "Jazz"],
       instruments: [{ instrument: "Guitar", level: InstrumentLevel.Intermediate }],
-    });
+    };
+
+    await controller.updateMyProfile(updateData, request);
+
+    expect(usersService.updateProfileForUser).toHaveBeenCalledWith("user-1", updateData);
   });
 
   it("rejects invalid instrument level payloads", async () => {
@@ -172,24 +169,22 @@ describe("UsersController", () => {
   it("rejects non-admin access to list profiles", async () => {
     const request = { user: { id: "user-1", role: UserRole.User } } as Request;
 
-    await expect(controller.listProfiles(request)).rejects.toHaveProperty(
-      "message",
-      "Admins uniquement",
-    );
+    await expect(controller.listProfiles(request)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it("lists profiles for admins", async () => {
     const request = { user: { id: "admin-1", role: UserRole.Admin } } as Request;
-    usersService.listProfiles.mockResolvedValueOnce([{ id: "profile-1" }] as any);
+    const mockProfiles = [{ id: "profile-1" }];
+    usersService.listProfiles.mockResolvedValueOnce(mockProfiles);
 
     const result = await controller.listProfiles(request);
 
-    expect(result).toEqual([{ id: "profile-1" }]);
+    expect(result).toEqual(mockProfiles);
   });
 
   it("returns null when updating profile without a user", async () => {
     const request = {} as Request;
-    usersService.updateProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as any);
+    usersService.updateProfileForUser.mockResolvedValueOnce({ id: "profile-1" });
 
     const result = await controller.updateMyProfile({ firstName: "Ada" }, request);
 
@@ -198,14 +193,13 @@ describe("UsersController", () => {
 
   it("updates avatar for current user", async () => {
     const request = { user: { id: "user-1" } } as Request;
-    usersService.updateAvatarForUser.mockResolvedValueOnce({ ok: true } as any);
+    usersService.updateAvatarForUser.mockResolvedValueOnce({ ok: true });
 
     const result = await controller.updateMyAvatar(
       { buffer: Buffer.from("fake") } as Express.Multer.File,
       request,
     );
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.updateAvatarForUser).toHaveBeenCalledWith("user-1", expect.any(Buffer));
     expect(result).toEqual({ ok: true });
   });
@@ -218,16 +212,30 @@ describe("UsersController", () => {
     );
   });
 
+  it("returns user avatar when available", async () => {
+    const request = { user: { id: "user-1" } } as Request;
+    const response = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as unknown as Response;
+    usersService.getAvatarForUser.mockResolvedValueOnce(Buffer.from("avatar"));
+
+    await controller.getMyAvatar(request, response);
+
+    expect(usersService.getAvatarForUser).toHaveBeenCalledWith("user-1");
+    expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
+    expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
+  });
+
   it("returns profile avatar when available", async () => {
     const response = {
       setHeader: jest.fn(),
       send: jest.fn(),
-    } as any;
+    } as unknown as Response;
     usersService.getAvatarForProfile.mockResolvedValueOnce(Buffer.from("avatar"));
 
     await controller.getProfileAvatar("profile-1", response);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(usersService.getAvatarForProfile).toHaveBeenCalledWith("profile-1");
     expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
     expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
@@ -237,11 +245,21 @@ describe("UsersController", () => {
     const response = {
       setHeader: jest.fn(),
       send: jest.fn(),
-    } as any;
+    } as unknown as Response;
     usersService.getAvatarForProfile.mockResolvedValueOnce(null);
 
     await expect(controller.getProfileAvatar("profile-1", response)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it("returns a specific profile", async () => {
+    const mockProfile = { id: "profile-1", firstName: "Ada" };
+    usersService.getProfileById.mockResolvedValueOnce(mockProfile);
+
+    const result = await controller.getProfile("profile-1");
+
+    expect(usersService.getProfileById).toHaveBeenCalledWith("profile-1");
+    expect(result).toEqual(mockProfile);
   });
 });
