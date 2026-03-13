@@ -50,7 +50,7 @@ describe("UsersController", () => {
       .compile();
 
     controller = moduleRef.get(UsersController);
-    usersService = moduleRef.get(UsersService) as unknown as Record<keyof UsersService, jest.Mock>;
+    usersService = moduleRef.get(UsersService);
   });
 
   it("returns current user with profile for role=user", async () => {
@@ -214,37 +214,43 @@ describe("UsersController", () => {
 
   it("returns user avatar when available", async () => {
     const request = { user: { id: "user-1" } } as Request;
+    const setHeader = jest.fn();
+    const send = jest.fn();
     const response = {
-      setHeader: jest.fn(),
-      send: jest.fn(),
+      setHeader,
+      send,
     } as unknown as Response;
     usersService.getAvatarForUser.mockResolvedValueOnce(Buffer.from("avatar"));
 
     await controller.getMyAvatar(request, response);
 
     expect(usersService.getAvatarForUser).toHaveBeenCalledWith("user-1");
-    expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
-    expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
+    expect(send).toHaveBeenCalledWith(expect.any(Buffer));
   });
 
   it("returns profile avatar when available", async () => {
+    const setHeader = jest.fn();
+    const send = jest.fn();
     const response = {
-      setHeader: jest.fn(),
-      send: jest.fn(),
+      setHeader,
+      send,
     } as unknown as Response;
     usersService.getAvatarForProfile.mockResolvedValueOnce(Buffer.from("avatar"));
 
     await controller.getProfileAvatar("profile-1", response);
 
     expect(usersService.getAvatarForProfile).toHaveBeenCalledWith("profile-1");
-    expect(response.setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
-    expect(response.send).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(setHeader).toHaveBeenCalledWith("Content-Type", "application/octet-stream");
+    expect(send).toHaveBeenCalledWith(expect.any(Buffer));
   });
 
   it("throws when profile avatar is missing", async () => {
+    const setHeader = jest.fn();
+    const send = jest.fn();
     const response = {
-      setHeader: jest.fn(),
-      send: jest.fn(),
+      setHeader,
+      send,
     } as unknown as Response;
     usersService.getAvatarForProfile.mockResolvedValueOnce(null);
 

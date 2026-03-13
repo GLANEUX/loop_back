@@ -32,7 +32,8 @@
     "isolatedModules": false,
     "declaration": true,
     "removeComments": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*.ts", "src/types/**/*.d.ts", "db/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]

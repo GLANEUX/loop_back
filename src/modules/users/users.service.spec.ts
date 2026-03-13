@@ -1,3 +1,4 @@
+import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -21,7 +22,6 @@ describe("UsersService", () => {
   let instrumentRepo: jest.Mocked<Repository<InstrumentEntity>>;
   let profileGenreRepo: jest.Mocked<Repository<ProfileGenre>>;
   let profileInstrumentRepo: jest.Mocked<Repository<ProfileInstrument>>;
-  let profileMediaRepo: jest.Mocked<Repository<ProfileMedia>>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -99,7 +99,6 @@ describe("UsersService", () => {
     instrumentRepo = moduleRef.get(getRepositoryToken(InstrumentEntity));
     profileGenreRepo = moduleRef.get(getRepositoryToken(ProfileGenre));
     profileInstrumentRepo = moduleRef.get(getRepositoryToken(ProfileInstrument));
-    profileMediaRepo = moduleRef.get(getRepositoryToken(ProfileMedia));
   });
 
   afterEach(() => {
@@ -374,9 +373,12 @@ describe("UsersService", () => {
   });
 
   it("updates a user's password hash by id", async () => {
-    await service.updatePasswordById("user-1", "new-hash");
+    await service.updatePasswordById("user-1", "new-hash123!Palfklqsd");
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(userRepo.update).toHaveBeenCalledWith({ id: "user-1" }, { password: "new-hash" });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      { id: "user-1" },
+      { password: "new-hash123!Palfklqsd" },
+    );
   });
 
   it("updates email when it is available", async () => {
