@@ -548,10 +548,10 @@ export class MessagesService {
     return {
       id: profile.id,
       pseudo: profile.user?.pseudo ?? "",
-      firstName: profile.firstName ?? null,
-      lastName: profile.lastName ?? null,
+      first_name: profile.firstName ?? null,
+      last_name: profile.lastName ?? null,
       gender: profile.gender ?? null,
-      birthDate: profile.birthDate ?? null,
+      birth_date: profile.birthDate ?? null,
       bio: profile.bio ?? null,
       hasAvatar: Boolean(profile.avatarMediaId),
       genres,

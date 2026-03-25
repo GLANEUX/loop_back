@@ -70,10 +70,10 @@ export class DiscoveryService {
     return {
       id: profile.id,
       pseudo: profile.user?.pseudo ?? "",
-      firstName: profile.firstName ?? null,
-      lastName: profile.lastName ?? null,
+      first_name: profile.firstName ?? null,
+      last_name: profile.lastName ?? null,
       gender: profile.gender ?? null,
-      birthDate: profile.birthDate ?? null,
+      birth_date: profile.birthDate ?? null,
       bio: profile.bio ?? null,
       city: profile.city ?? null,
       country: profile.country ?? null,
@@ -81,7 +81,7 @@ export class DiscoveryService {
       genres,
       instruments,
       audio,
-      socialLinks:
+      social_links:
         profile.socialLinks?.map((link) => ({
           platform: link.platform,
           url: link.url,

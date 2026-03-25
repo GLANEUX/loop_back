@@ -77,14 +77,52 @@ export class UsersService {
   }
 
   private formatProfile(profile: Profile) {
-    const { genres, instruments, media, socialLinks, avatarMediaId, featuredAudioId, ...rest } =
-      profile;
+    const {
+      id,
+      userId,
+      firstName,
+      lastName,
+      phoneNumber,
+      birthDate,
+      gender,
+      bio,
+      avatarMediaId,
+      featuredAudioId,
+      isPublic,
+      city,
+      country,
+      lat,
+      lon,
+      createdAt,
+      updatedAt,
+      deletedAt,
+      genres,
+      instruments,
+      media,
+      socialLinks,
+    } = profile;
+
     const validation = Profile.validateProfile(profile);
 
     return {
-      ...rest,
-      avatarMediaId,
-      featuredAudioId,
+      id,
+      user_id: userId,
+      first_name: firstName ?? null,
+      last_name: lastName ?? null,
+      phone_number: phoneNumber ?? null,
+      birth_date: birthDate ?? null,
+      gender: gender ?? null,
+      bio: bio ?? null,
+      avatar_media_id: avatarMediaId ?? null,
+      featured_audio_id: featuredAudioId ?? null,
+      is_public: isPublic,
+      city: city ?? null,
+      country: country ?? null,
+      lat: lat ?? null,
+      lon: lon ?? null,
+      created_at: createdAt,
+      updated_at: updatedAt,
+      deleted_at: deletedAt ?? null,
       hasAvatar: Boolean(avatarMediaId),
       isValid: validation.isValid,
       missingFields: validation.missingFields,
@@ -106,10 +144,15 @@ export class UsersService {
             (instrument): instrument is { instrument: string; level: InstrumentLevel } =>
               instrument !== null,
           ) ?? [],
-      socialLinks:
+      social_links:
         socialLinks?.map((link) => ({
+          id: link.id,
+          profile_id: link.profileId,
           platform: link.platform,
           url: link.url,
+          created_at: link.createdAt,
+          updated_at: link.updatedAt,
+          deleted_at: link.deletedAt ?? null,
         })) ?? [],
       media:
         media
@@ -118,11 +161,14 @@ export class UsersService {
           .filter((m) => m.id !== avatarMediaId)
           .map((m) => ({
             id: m.id,
+            profile_id: m.profileId,
             type: m.type,
             title: m.title ?? null,
-            mimeType: m.mimeType,
+            mime_type: m.mimeType,
             order: m.order,
-            createdAt: m.createdAt,
+            created_at: m.createdAt,
+            updated_at: m.updatedAt,
+            deleted_at: m.deletedAt ?? null,
             url: `/user/media/${m.id}`,
           })) ?? [],
     };
@@ -496,9 +542,9 @@ export class UsersService {
     // Update profile pointers
     if (options?.isAvatar && type === ProfileMediaType.Image) {
       await this.profileRepo.update(profile.id, { avatarMediaId: savedMedia.id });
-      // Physical deletion of old avatar media to avoid orphans
+      // Soft deletion of old avatar media
       if (oldAvatarId) {
-        await this.profileMediaRepo.delete(oldAvatarId);
+        await this.profileMediaRepo.softDelete(oldAvatarId);
       }
     }
 
@@ -582,7 +628,7 @@ export class UsersService {
     }
 
     // FKs will be set to NULL automatically by DB (ON DELETE SET NULL)
-    await this.profileMediaRepo.remove(media);
+    await this.profileMediaRepo.softRemove(media);
     return { ok: true };
   }
 
@@ -595,7 +641,7 @@ export class UsersService {
     const mediaId = profile.avatarMediaId;
     // Clearing the FK first is safer, although ON DELETE SET NULL would handle it
     await this.profileRepo.update(profile.id, { avatarMediaId: null });
-    await this.profileMediaRepo.delete(mediaId);
+    await this.profileMediaRepo.softDelete(mediaId);
 
     return { ok: true };
   }

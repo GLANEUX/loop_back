@@ -2,11 +2,26 @@ import { ApiProperty } from "@nestjs/swagger";
 import { InstrumentLevel, SocialPlatform } from "./profile.enums";
 
 export class SocialLinkDto {
+  @ApiProperty({ format: "uuid" })
+  id!: string;
+
+  @ApiProperty({ format: "uuid" })
+  profile_id!: string;
+
   @ApiProperty({ enum: SocialPlatform, example: SocialPlatform.Instagram })
   platform!: SocialPlatform;
 
   @ApiProperty({ example: "https://instagram.com/myprofile" })
   url!: string;
+
+  @ApiProperty()
+  created_at!: Date;
+
+  @ApiProperty()
+  updated_at!: Date;
+
+  @ApiProperty({ nullable: true })
+  deleted_at?: Date | null;
 }
 
 export class ProfileInstrumentDto {
@@ -21,6 +36,9 @@ export class ProfileMediaDto {
   @ApiProperty({ format: "uuid" })
   id!: string;
 
+  @ApiProperty({ format: "uuid" })
+  profile_id!: string;
+
   @ApiProperty({ example: "image" })
   type!: string;
 
@@ -28,13 +46,19 @@ export class ProfileMediaDto {
   title!: string | null;
 
   @ApiProperty({ example: "image/jpeg" })
-  mimeType!: string;
+  mime_type!: string;
 
   @ApiProperty({ example: 0 })
   order!: number;
 
   @ApiProperty()
-  createdAt!: Date;
+  created_at!: Date;
+
+  @ApiProperty()
+  updated_at!: Date;
+
+  @ApiProperty({ nullable: true })
+  deleted_at?: Date | null;
 
   @ApiProperty({ example: "/user/media/uuid" })
   url!: string;
@@ -45,25 +69,34 @@ export class ProfileDto {
   id!: string;
 
   @ApiProperty({ format: "uuid" })
-  userId!: string;
+  user_id!: string;
 
   @ApiProperty({ nullable: true })
-  firstName!: string | null;
+  first_name!: string | null;
 
   @ApiProperty({ nullable: true })
-  lastName!: string | null;
+  last_name!: string | null;
 
   @ApiProperty({ nullable: true })
-  phoneNumber!: string | null;
+  phone_number!: string | null;
 
   @ApiProperty({ format: "date", nullable: true })
-  birthDate!: string | null;
+  birth_date!: string | null;
 
   @ApiProperty({ nullable: true })
   gender!: string | null;
 
   @ApiProperty({ nullable: true })
   bio!: string | null;
+
+  @ApiProperty({ nullable: true })
+  avatar_media_id!: string | null;
+
+  @ApiProperty({ nullable: true })
+  featured_audio_id!: string | null;
+
+  @ApiProperty()
+  is_public!: boolean;
 
   @ApiProperty({ nullable: true })
   city!: string | null;
@@ -78,8 +111,15 @@ export class ProfileDto {
   lon!: number | null;
 
   @ApiProperty()
-  isPublic!: boolean;
+  created_at!: Date;
 
+  @ApiProperty()
+  updated_at!: Date;
+
+  @ApiProperty({ nullable: true })
+  deleted_at?: Date | null;
+
+  // Virtual/Joined fields for API convenience
   @ApiProperty()
   hasAvatar!: boolean;
 
@@ -96,7 +136,7 @@ export class ProfileDto {
   instruments!: ProfileInstrumentDto[];
 
   @ApiProperty({ type: [SocialLinkDto] })
-  socialLinks!: SocialLinkDto[];
+  social_links!: SocialLinkDto[];
 
   @ApiProperty({ type: [ProfileMediaDto], required: false })
   media?: ProfileMediaDto[];
@@ -114,6 +154,15 @@ export class UserMeDto {
 
   @ApiProperty()
   pseudo!: string;
+
+  @ApiProperty()
+  created_at!: Date;
+
+  @ApiProperty()
+  updated_at!: Date;
+
+  @ApiProperty({ nullable: true })
+  deleted_at?: Date | null;
 
   @ApiProperty({ type: ProfileDto, nullable: true })
   profile!: ProfileDto | null;

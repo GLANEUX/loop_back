@@ -95,36 +95,16 @@ const userUpdateSchema = z.object({
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiTags("User Account")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Soft delete current user" })
-  @ApiOkResponse({
-    schema: {
-      type: "object",
-      properties: {
-        ok: { type: "boolean", example: true },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: "Jeton manquant ou invalide",
-  })
-  @Delete("me")
-  async softDeleteMe(@Req() request: Request) {
-    if (request.user?.id) {
-      await this.usersService.softDeleteById(request.user.id);
-    }
-    return { ok: true };
-  }
+  // ==========================================================
+  // CATEGORY: USER ACCOUNT
+  // ==========================================================
 
   @ApiTags("User Account")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Get current user (and profile for non-admin users)" })
+  @ApiOperation({ summary: "Get current user account details" })
   @ApiOkResponse({ type: UserMeDto })
-  @ApiResponse({ status: 401, description: "Jeton manquant ou invalide" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   @Get("me")
   async getMe(@Req() request: Request) {
     if (!request.user?.id) {
@@ -141,7 +121,10 @@ export class UsersController {
       email: user.email,
       role: user.role,
       pseudo: user.pseudo,
-    } as const;
+      created_at: user.createdAt,
+      updated_at: user.updatedAt,
+      deleted_at: user.deletedAt ?? null,
+    };
 
     if (user.role === UserRole.Admin) {
       return base;
@@ -156,7 +139,7 @@ export class UsersController {
   @ApiTags("User Account")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Update current user" })
+  @ApiOperation({ summary: "Update current user account (email, pseudo)" })
   @ApiBody({
     schema: {
       type: "object",
@@ -174,6 +157,8 @@ export class UsersController {
       },
     },
   })
+  @ApiResponse({ status: 400, description: "Invalid payload" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   @Patch("me")
   async updateMe(@Body() body: unknown, @Req() request: Request) {
     const parsed = userUpdateSchema.safeParse(body ?? {});
@@ -196,13 +181,38 @@ export class UsersController {
     return { ok: true };
   }
 
+  @ApiTags("User Account")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Soft delete current user account" })
+  @ApiOkResponse({
+    schema: {
+      type: "object",
+      properties: {
+        ok: { type: "boolean", example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @Delete("me")
+  async softDeleteMe(@Req() request: Request) {
+    if (request.user?.id) {
+      await this.usersService.softDeleteById(request.user.id);
+    }
+    return { ok: true };
+  }
+
+  // ==========================================================
+  // CATEGORY: USER PROFILE
+  // ==========================================================
+
   @ApiTags("User Profile")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Get current user's profile (non-admin only)" })
+  @ApiOperation({ summary: "Get current user's profile" })
   @ApiOkResponse({ type: ProfileDto })
-  @ApiResponse({ status: 401, description: "Jeton manquant ou invalide" })
-  @ApiResponse({ status: 403, description: "Les admins n'ont pas de profil utilisateur" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 403, description: "Admins do not have profiles" })
   @Get("me/profile")
   async getMyProfile(@Req() request: Request) {
     if (!request.user?.id) {
@@ -214,25 +224,12 @@ export class UsersController {
   @ApiTags("User Profile")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "List all profiles (admin only)" })
-  @ApiOkResponse({ type: [ProfileDto] })
-  @ApiResponse({ status: 403, description: "Admins uniquement" })
-  @Get("profiles")
-  async listProfiles(@Req() request: Request) {
-    if (request.user?.role !== UserRole.Admin) {
-      throw new ForbiddenException("Admins uniquement");
-    }
-    return this.usersService.listProfiles();
-  }
-
-  @ApiTags("User Profile")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Update current user's profile (non-admin only)" })
+  @ApiOperation({ summary: "Update current user's profile details" })
   @ApiBody({ type: UpdateProfileDto })
   @ApiOkResponse({ type: ProfileDto })
-  @ApiResponse({ status: 400, description: "Payload invalide" })
-  @ApiResponse({ status: 403, description: "Les admins n'ont pas de profil utilisateur" })
+  @ApiResponse({ status: 400, description: "Invalid payload" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 403, description: "Admins do not have profiles" })
   @Patch("me/profile")
   async updateMyProfile(@Body() body: unknown, @Req() request: Request) {
     const parsed = profileUpdateSchema.safeParse(body ?? {});
@@ -247,10 +244,40 @@ export class UsersController {
     return this.usersService.updateProfileForUser(request.user.id, parsed.data);
   }
 
+  @ApiTags("User Profile")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get a specific public profile by ID" })
+  @ApiParam({ name: "id", description: "Profile UUID", type: "string" })
+  @ApiOkResponse({ type: ProfileDto })
+  @ApiResponse({ status: 404, description: "Profile not found" })
+  @Get("profiles/:id")
+  async getProfile(@Param("id") profileId: string) {
+    return this.usersService.getProfileById(profileId);
+  }
+
+  @ApiTags("User Profile")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List all user profiles (Admin only)" })
+  @ApiOkResponse({ type: [ProfileDto] })
+  @ApiResponse({ status: 403, description: "Admin access only" })
+  @Get("profiles")
+  async listProfiles(@Req() request: Request) {
+    if (request.user?.role !== UserRole.Admin) {
+      throw new ForbiddenException("Admins uniquement");
+    }
+    return this.usersService.listProfiles();
+  }
+
+  // ==========================================================
+  // CATEGORY: USER MEDIA (AVATAR SPECIFIC)
+  // ==========================================================
+
   @ApiTags("User Media")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Update current user's avatar (non-admin only)" })
+  @ApiOperation({ summary: "Update current user's avatar" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -269,8 +296,8 @@ export class UsersController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: "Fichier d'avatar manquant" })
-  @ApiResponse({ status: 403, description: "Les admins n'ont pas de profil utilisateur" })
+  @ApiResponse({ status: 400, description: "Missing file" })
+  @ApiResponse({ status: 403, description: "Admins do not have profiles" })
   @Patch("me/avatar")
   @UseInterceptors(
     FileInterceptor("avatar", {
@@ -293,10 +320,9 @@ export class UsersController {
   @ApiTags("User Media")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Get current user's avatar (non-admin only)" })
+  @ApiOperation({ summary: "Get current user's avatar" })
   @ApiProduces("application/octet-stream")
-  @ApiResponse({ status: 404, description: "Avatar introuvable" })
-  @ApiResponse({ status: 403, description: "Les admins n'ont pas de profil utilisateur" })
+  @ApiResponse({ status: 404, description: "Avatar not found" })
   @Get("me/avatar")
   async getMyAvatar(@Req() request: Request, @Res() res: Response) {
     if (!request.user?.id) {
@@ -313,10 +339,10 @@ export class UsersController {
   @ApiTags("User Media")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Get a public profile avatar" })
-  @ApiParam({ name: "id", description: "Profile id", schema: { type: "string" } })
+  @ApiOperation({ summary: "Get a specific profile avatar by profile ID" })
+  @ApiParam({ name: "id", description: "Profile UUID", type: "string" })
   @ApiProduces("application/octet-stream")
-  @ApiResponse({ status: 404, description: "Avatar introuvable" })
+  @ApiResponse({ status: 404, description: "Avatar not found" })
   @Get("profiles/:id/avatar")
   async getProfileAvatar(@Param("id") profileId: string, @Res() res: Response) {
     const avatar = await this.usersService.getAvatarForProfile(profileId);
@@ -325,17 +351,5 @@ export class UsersController {
     }
     res.setHeader("Content-Type", "application/octet-stream");
     return res.send(avatar);
-  }
-
-  @ApiTags("User Profile")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Get a public profile" })
-  @ApiParam({ name: "id", description: "Profile id", schema: { type: "string" } })
-  @ApiOkResponse({ type: ProfileDto })
-  @ApiResponse({ status: 404, description: "Profil introuvable" })
-  @Get("profiles/:id")
-  async getProfile(@Param("id") profileId: string) {
-    return this.usersService.getProfileById(profileId);
   }
 }
