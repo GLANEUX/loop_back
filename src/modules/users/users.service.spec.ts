@@ -1,10 +1,5 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -24,10 +19,6 @@ describe("UsersService", () => {
   let service: UsersService;
   let userRepo: jest.Mocked<Repository<User>>;
   let profileRepo: jest.Mocked<Repository<Profile>>;
-  let genreRepo: jest.Mocked<Repository<GenreEntity>>;
-  let instrumentRepo: jest.Mocked<Repository<InstrumentEntity>>;
-  let profileGenreRepo: jest.Mocked<Repository<ProfileGenre>>;
-  let profileInstrumentRepo: jest.Mocked<Repository<ProfileInstrument>>;
   let profileMediaRepo: jest.Mocked<Repository<ProfileMedia>>;
   let socialLinkRepo: jest.Mocked<Repository<SocialLink>>;
 
@@ -98,6 +89,7 @@ describe("UsersService", () => {
             find: jest.fn(),
             remove: jest.fn(),
             delete: jest.fn(),
+            softDelete: jest.fn(),
           },
         },
         {
@@ -114,10 +106,6 @@ describe("UsersService", () => {
     service = moduleRef.get(UsersService);
     userRepo = moduleRef.get(getRepositoryToken(User));
     profileRepo = moduleRef.get(getRepositoryToken(Profile));
-    genreRepo = moduleRef.get(getRepositoryToken(GenreEntity));
-    instrumentRepo = moduleRef.get(getRepositoryToken(InstrumentEntity));
-    profileGenreRepo = moduleRef.get(getRepositoryToken(ProfileGenre));
-    profileInstrumentRepo = moduleRef.get(getRepositoryToken(ProfileInstrument));
     profileMediaRepo = moduleRef.get(getRepositoryToken(ProfileMedia));
     socialLinkRepo = moduleRef.get(getRepositoryToken(SocialLink));
   });
@@ -208,7 +196,7 @@ describe("UsersService", () => {
       );
 
       expect(profileRepo.update).toHaveBeenCalledWith("p1", { avatarMediaId: "new-m" });
-      expect(profileMediaRepo.delete).toHaveBeenCalledWith("old-m"); // Physical cleanup
+      expect(profileMediaRepo.softDelete).toHaveBeenCalledWith("old-m"); // Physical cleanup
     });
 
     it("uploads a new audio and sets it as featured", async () => {
@@ -295,7 +283,7 @@ describe("UsersService", () => {
       await service.deleteAvatar("u1");
 
       expect(profileRepo.update).toHaveBeenCalledWith("p1", { avatarMediaId: null });
-      expect(profileMediaRepo.delete).toHaveBeenCalledWith("m1");
+      expect(profileMediaRepo.softDelete).toHaveBeenCalledWith("m1");
     });
   });
 

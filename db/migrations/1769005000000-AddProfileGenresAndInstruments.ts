@@ -98,7 +98,9 @@ export class AddProfileGenresAndInstruments1769005000000 implements MigrationInt
     await queryRunner.query(`DROP TABLE "instruments"`);
     await queryRunner.query(`DROP TYPE "instrument_level_enum"`);
 
-    await queryRunner.query(`CREATE TYPE "genre_enum" AS ENUM ('Rock','Jazz','Pop','Electro','Classical','HipHop')`);
+    await queryRunner.query(
+      `CREATE TYPE "genre_enum" AS ENUM ('Rock','Jazz','Pop','Electro','Classical','HipHop')`,
+    );
     await queryRunner.query(
       `CREATE TYPE "instrument_enum" AS ENUM ('Guitar','Piano','Drums','Bass','Violin','Vocal','Other')`,
     );

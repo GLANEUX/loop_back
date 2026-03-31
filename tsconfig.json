@@ -37,5 +37,3 @@
   "include": ["src/**/*.ts", "src/types/**/*.d.ts", "db/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
-
-

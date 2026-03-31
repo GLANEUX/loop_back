@@ -4,9 +4,7 @@ export class CreateProfileMediaTable1770000000000 implements MigrationInterface 
   name = "CreateProfileMediaTable1770000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TYPE "profile_media_type_enum" AS ENUM('image', 'audio')`,
-    );
+    await queryRunner.query(`CREATE TYPE "profile_media_type_enum" AS ENUM('image', 'audio')`);
     await queryRunner.query(
       `CREATE TABLE "profile_media" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),

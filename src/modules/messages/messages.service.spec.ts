@@ -183,7 +183,7 @@ describe("MessagesService", () => {
 
     expect(result.messages.map((msg) => msg.id)).toEqual(["msg-2", "msg-3"]);
     expect(result.nextCursor?.beforeId).toBe("msg-2");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.update).toHaveBeenCalledWith("match-1", {
       lastDeliveredMessageIdByA: "msg-3",
     });
@@ -224,7 +224,7 @@ describe("MessagesService", () => {
     const result = await service.markRead("user-1", "match-1", "msg-1");
 
     expect(result).toEqual({ ok: true });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.update).not.toHaveBeenCalled();
   });
 
@@ -262,7 +262,6 @@ describe("MessagesService", () => {
 
     await service.markRead("user-1", "match-1", "msg-2");
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(matchRepo.update).toHaveBeenCalledWith("match-1", {
       lastReadMessageIdByA: "msg-2",
       lastDeliveredMessageIdByA: "msg-2",

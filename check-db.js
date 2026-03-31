@@ -1,13 +1,14 @@
-const { Client } = require('pg');
+const { Client } = require("pg");
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
 });
-client.connect()
+client
+  .connect()
   .then(() => {
-    console.log('Connected!');
+    console.log("Connected!");
     return client.end();
   })
-  .catch(err => {
-    console.error('Connection error', err.stack);
+  .catch((err) => {
+    console.error("Connection error", err.stack);
     process.exit(1);
   });

@@ -38,12 +38,8 @@ export class AddSwipesAndMatches1769700000000 implements MigrationInterface {
         CONSTRAINT "UQ_matches_profiles" UNIQUE ("profile_a_id", "profile_b_id")
       )`,
     );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_matches_profile_a" ON "matches" ("profile_a_id")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_matches_profile_b" ON "matches" ("profile_b_id")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_matches_profile_a" ON "matches" ("profile_a_id")`);
+    await queryRunner.query(`CREATE INDEX "IDX_matches_profile_b" ON "matches" ("profile_b_id")`);
     await queryRunner.query(
       `ALTER TABLE "matches" ADD CONSTRAINT "FK_matches_profile_a_id" FOREIGN KEY ("profile_a_id") REFERENCES "profiles"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );

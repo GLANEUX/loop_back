@@ -48,7 +48,6 @@ describe("DiscoveryController", () => {
       request,
     );
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(discoveryService.swipe).toHaveBeenCalledWith(
       "user-1",
       "550e8400-e29b-41d4-a716-446655440000",
@@ -67,11 +66,11 @@ describe("DiscoveryController", () => {
     discoveryService.listSwipes.mockResolvedValue([]);
 
     await controller.listLikes(request);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(discoveryService.listSwipes).toHaveBeenCalledWith("user-1", true);
 
     await controller.listDislikes(request);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(discoveryService.listSwipes).toHaveBeenCalledWith("user-1", false);
   });
 });

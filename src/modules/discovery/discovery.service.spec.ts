@@ -114,10 +114,10 @@ describe("DiscoveryService", () => {
       {
         id: "profile-3",
         pseudo: "loopster",
-        firstName: "Ada",
-        lastName: null,
+        first_name: "Ada",
+        last_name: null,
         gender: "Female",
-        birthDate: "1990-01-01",
+        birth_date: "1990-01-01",
         bio: "Bio",
         city: "Paris",
         country: "France",
@@ -125,12 +125,12 @@ describe("DiscoveryService", () => {
         genres: ["Rock"],
         instruments: [{ instrument: "Guitar", level: InstrumentLevel.Beginner }],
         audio: [],
-        socialLinks: [],
+        social_links: [],
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(swipeRepo.find).toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(profileRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
         take: 20,
@@ -219,9 +219,9 @@ describe("DiscoveryService", () => {
 
     expect(result.matchCreated).toBe(true);
     expect(result.matchId).toBe("match-1");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.restore).toHaveBeenCalledWith("match-1");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.update).toHaveBeenCalledWith("match-1", {
       lastReadMessageIdByA: null,
       lastReadMessageIdByB: null,
@@ -260,16 +260,16 @@ describe("DiscoveryService", () => {
     const result = await service.swipe("user-1", "profile-2", false);
 
     expect(result.matchCreated).toBe(false);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.update).toHaveBeenCalledWith("match-1", {
       lastReadMessageIdByA: null,
       lastReadMessageIdByB: null,
       lastDeliveredMessageIdByA: null,
       lastDeliveredMessageIdByB: null,
     });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(messageRepo.softDelete).toHaveBeenCalledWith({ matchId: "match-1" });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(matchRepo.softDelete).toHaveBeenCalledWith("match-1");
   });
 
@@ -317,7 +317,7 @@ describe("DiscoveryService", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].profile.pseudo).toBe("liked-user");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(swipeRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({

@@ -4,9 +4,7 @@ export class AddUserPseudoAndProfileDetails1769009000000 implements MigrationInt
   name = "AddUserPseudoAndProfileDetails1769009000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "users" ADD COLUMN "pseudo" character varying(120)`,
-    );
+    await queryRunner.query(`ALTER TABLE "users" ADD COLUMN "pseudo" character varying(120)`);
     await queryRunner.query(
       `UPDATE "users" SET "pseudo" = split_part("email", '@', 1) WHERE "pseudo" IS NULL`,
     );
@@ -33,9 +31,7 @@ export class AddUserPseudoAndProfileDetails1769009000000 implements MigrationInt
     await queryRunner.query(
       `ALTER TABLE "profiles" ADD COLUMN "first_name" character varying(120)`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "profiles" ADD COLUMN "last_name" character varying(120)`,
-    );
+    await queryRunner.query(`ALTER TABLE "profiles" ADD COLUMN "last_name" character varying(120)`);
     await queryRunner.query(
       `ALTER TABLE "profiles" ADD COLUMN "phone_number" character varying(32)`,
     );

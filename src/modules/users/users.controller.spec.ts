@@ -64,6 +64,9 @@ describe("UsersController", () => {
       pseudo: "ada",
       role: UserRole.User,
       profile: { id: "profile-1", isPublic: true },
+      created_at: undefined,
+      updated_at: undefined,
+      deleted_at: null,
     };
     usersService.findWithProfileById.mockResolvedValueOnce(mockUser);
 
@@ -87,6 +90,9 @@ describe("UsersController", () => {
       email: "admin@loop.local",
       role: UserRole.Admin,
       pseudo: "admin",
+      created_at: undefined,
+      updated_at: undefined,
+      deleted_at: null,
     };
     usersService.findWithProfileById.mockResolvedValueOnce(mockAdmin);
 

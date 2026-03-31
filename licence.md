@@ -17,12 +17,12 @@ Unauthorized copying, modification, distribution, publication, sublicensing, or 
 
 The Software, including but not limited to:
 
-* source code
-* architecture
-* application logic
-* design and interface elements
-* documentation
-* related assets and resources
+- source code
+- architecture
+- application logic
+- design and interface elements
+- documentation
+- related assets and resources
 
 is the **exclusive intellectual property of Océane Glaneux** and is protected by **copyright laws and international intellectual property treaties**.
 
@@ -32,14 +32,14 @@ is the **exclusive intellectual property of Océane Glaneux** and is protected b
 
 Without **explicit prior written permission** from the copyright holder, you may **NOT**:
 
-* Copy or reproduce the Software
-* Modify the Software
-* Create derivative works based on the Software
-* Distribute or publish the Software
-* Sublicense, rent, lease, or sell the Software
-* Use the Software for **commercial purposes**
-* Reverse engineer, decompile, or disassemble the Software
-* Use the Software to create a **competing product or service**
+- Copy or reproduce the Software
+- Modify the Software
+- Create derivative works based on the Software
+- Distribute or publish the Software
+- Sublicense, rent, lease, or sell the Software
+- Use the Software for **commercial purposes**
+- Reverse engineer, decompile, or disassemble the Software
+- Use the Software to create a **competing product or service**
 
 ---
 
@@ -69,9 +69,9 @@ The copyright holder reserves the right to **pursue legal action** against any i
 
 The Software is provided **“as is”**, without warranty of any kind, express or implied, including but not limited to the warranties of:
 
-* merchantability
-* fitness for a particular purpose
-* non-infringement
+- merchantability
+- fitness for a particular purpose
+- non-infringement
 
 ---
 

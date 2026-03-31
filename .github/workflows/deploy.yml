@@ -71,38 +71,38 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-              set -e
+            set -e
 
-              cd /home/loop_back
-              git pull origin main
+            cd /home/loop_back
+            git pull origin main
 
-              cd docker/prod
-              docker compose down
-              docker compose up -d --build
+            cd docker/prod
+            docker compose down
+            docker compose up -d --build
 
-              # attendre un peu
+            # attendre un peu
+            sleep 3
+
+            # migrations (retry)
+            for i in {1..10}; do
+              if docker compose exec -T api npm run migration:run:prod; then
+                echo "✅ Migrations OK"
+                break
+              fi
+              echo "⏳ migrations retry ($i/10)"
               sleep 3
+            done
 
-              # migrations (retry)
-              for i in {1..10}; do
-                if docker compose exec -T api npm run migration:run:prod; then
-                  echo "✅ Migrations OK"
-                  break
-                fi
-                echo "⏳ migrations retry ($i/10)"
-                sleep 3
-              done
-
-              for i in {1..10}; do
-                if curl -fsS http://localhost:3001/health >/dev/null; then
-                  echo "✅ Health check OK"
-                  exit 0
-                fi
-                echo "⏳ waiting health ($i/30)"
-                sleep 2
-              done
+            for i in {1..10}; do
+              if curl -fsS http://localhost:3001/health >/dev/null; then
+                echo "✅ Health check OK"
+                exit 0
+              fi
+              echo "⏳ waiting health ($i/30)"
+              sleep 2
+            done
 
 
-              echo "❌ Health check failed"
-              docker compose logs --tail=200 api
-              exit 1
+            echo "❌ Health check failed"
+            docker compose logs --tail=200 api
+            exit 1

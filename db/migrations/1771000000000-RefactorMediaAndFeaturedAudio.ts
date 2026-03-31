@@ -14,28 +14,34 @@ export class RefactorMediaAndFeaturedAudio1771000000000 implements MigrationInte
 
     // 3. Move existing avatar binary data from profiles to profile_media
     // We select profiles that have an avatar
-    const profilesWithAvatar = await queryRunner.query(`SELECT id, avatar FROM "profiles" WHERE avatar IS NOT NULL`);
+    const profilesWithAvatar = await queryRunner.query(
+      `SELECT id, avatar FROM "profiles" WHERE avatar IS NOT NULL`,
+    );
 
     for (const profile of profilesWithAvatar) {
       // Create a new entry in profile_media for the avatar
       const mediaId = await queryRunner.query(
         `INSERT INTO "profile_media"("profile_id", "type", "data", "mime_type", "title", "order") 
          VALUES($1, 'image', $2, 'image/jpeg', 'Avatar', 0) RETURNING id`,
-        [profile.id, profile.avatar]
+        [profile.id, profile.avatar],
       );
 
       // Update the profile to point to the new media entry
       if (mediaId && mediaId[0]) {
-        await queryRunner.query(
-          `UPDATE "profiles" SET "avatar_media_id" = $1 WHERE id = $2`,
-          [mediaId[0].id, profile.id]
-        );
+        await queryRunner.query(`UPDATE "profiles" SET "avatar_media_id" = $1 WHERE id = $2`, [
+          mediaId[0].id,
+          profile.id,
+        ]);
       }
     }
 
     // 4. Add foreign key constraints
-    await queryRunner.query(`ALTER TABLE "profiles" ADD CONSTRAINT "FK_profile_avatar_media" FOREIGN KEY ("avatar_media_id") REFERENCES "profile_media"("id") ON DELETE SET NULL`);
-    await queryRunner.query(`ALTER TABLE "profiles" ADD CONSTRAINT "FK_profile_featured_audio" FOREIGN KEY ("featured_audio_id") REFERENCES "profile_media"("id") ON DELETE SET NULL`);
+    await queryRunner.query(
+      `ALTER TABLE "profiles" ADD CONSTRAINT "FK_profile_avatar_media" FOREIGN KEY ("avatar_media_id") REFERENCES "profile_media"("id") ON DELETE SET NULL`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "profiles" ADD CONSTRAINT "FK_profile_featured_audio" FOREIGN KEY ("featured_audio_id") REFERENCES "profile_media"("id") ON DELETE SET NULL`,
+    );
 
     // 5. Drop the legacy avatar column
     await queryRunner.query(`ALTER TABLE "profiles" DROP COLUMN "avatar"`);
@@ -57,7 +63,7 @@ export class RefactorMediaAndFeaturedAudio1771000000000 implements MigrationInte
     await queryRunner.query(`ALTER TABLE "profiles" DROP CONSTRAINT "FK_profile_avatar_media"`);
     await queryRunner.query(`ALTER TABLE "profiles" DROP COLUMN "featured_audio_id"`);
     await queryRunner.query(`ALTER TABLE "profiles" DROP COLUMN "avatar_media_id"`);
-    
+
     // Note: We cannot easily remove 'video' from enum in standard migration revert without creating a new type
   }
 }

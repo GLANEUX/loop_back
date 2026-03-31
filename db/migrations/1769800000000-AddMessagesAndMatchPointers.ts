@@ -33,12 +33,8 @@ export class AddMessagesAndMatchPointers1769800000000 implements MigrationInterf
       `ALTER TABLE "messages" ADD CONSTRAINT "FK_messages_author_profile_id" FOREIGN KEY ("author_profile_id") REFERENCES "profiles"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
 
-    await queryRunner.query(
-      `ALTER TABLE "matches" ADD COLUMN "last_read_message_id_by_a" uuid`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "matches" ADD COLUMN "last_read_message_id_by_b" uuid`,
-    );
+    await queryRunner.query(`ALTER TABLE "matches" ADD COLUMN "last_read_message_id_by_a" uuid`);
+    await queryRunner.query(`ALTER TABLE "matches" ADD COLUMN "last_read_message_id_by_b" uuid`);
     await queryRunner.query(
       `ALTER TABLE "matches" ADD COLUMN "last_delivered_message_id_by_a" uuid`,
     );
@@ -48,18 +44,10 @@ export class AddMessagesAndMatchPointers1769800000000 implements MigrationInterf
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "matches" DROP COLUMN "last_delivered_message_id_by_b"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "matches" DROP COLUMN "last_delivered_message_id_by_a"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "matches" DROP COLUMN "last_read_message_id_by_b"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "matches" DROP COLUMN "last_read_message_id_by_a"`,
-    );
+    await queryRunner.query(`ALTER TABLE "matches" DROP COLUMN "last_delivered_message_id_by_b"`);
+    await queryRunner.query(`ALTER TABLE "matches" DROP COLUMN "last_delivered_message_id_by_a"`);
+    await queryRunner.query(`ALTER TABLE "matches" DROP COLUMN "last_read_message_id_by_b"`);
+    await queryRunner.query(`ALTER TABLE "matches" DROP COLUMN "last_read_message_id_by_a"`);
 
     await queryRunner.query(
       `ALTER TABLE "messages" DROP CONSTRAINT "FK_messages_author_profile_id"`,
