@@ -93,14 +93,7 @@ describe("MediaController", () => {
       const invalidFile = { ...mockFile, mimetype: "application/pdf" } as any;
 
       await expect(
-        controller.uploadMedia(
-          invalidFile,
-          ProfileMediaType.Image,
-          "Title",
-          "false",
-          "false",
-          req,
-        ),
+        controller.uploadMedia(invalidFile, ProfileMediaType.Image, "Title", "false", "false", req),
       ).rejects.toThrow(BadRequestException);
     });
   });

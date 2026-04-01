@@ -412,7 +412,10 @@ describe("UsersService", () => {
       expect(result).toBe(true);
       expect(blockRepo.count).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: [{ blockerProfileId: "p1", blockedProfileId: "p2" }, { blockerProfileId: "p2", blockedProfileId: "p1" }],
+          where: [
+            { blockerProfileId: "p1", blockedProfileId: "p2" },
+            { blockerProfileId: "p2", blockedProfileId: "p1" },
+          ],
         }),
       );
     });

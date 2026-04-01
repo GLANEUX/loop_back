@@ -19,7 +19,6 @@ describe("DiscoveryService", () => {
   let matchRepo: jest.Mocked<Repository<Match>>;
   let messageRepo: jest.Mocked<Repository<Message>>;
   let profileRepo: jest.Mocked<Repository<Profile>>;
-  let messagesService: jest.Mocked<MessagesService>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -88,7 +87,6 @@ describe("DiscoveryService", () => {
     matchRepo = moduleRef.get(getRepositoryToken(Match));
     messageRepo = moduleRef.get(getRepositoryToken(Message));
     profileRepo = moduleRef.get(getRepositoryToken(Profile));
-    messagesService = moduleRef.get(MessagesService);
   });
 
   afterEach(() => {

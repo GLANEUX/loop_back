@@ -18,7 +18,6 @@ describe("MessagesService", () => {
   let messageRepo: jest.Mocked<Repository<Message>>;
   let matchRepo: jest.Mocked<Repository<Match>>;
   let rateLimitService: jest.Mocked<RateLimitService>;
-  let messagesGateway: jest.Mocked<MessagesGateway>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -74,7 +73,6 @@ describe("MessagesService", () => {
     messageRepo = moduleRef.get(getRepositoryToken(Message));
     matchRepo = moduleRef.get(getRepositoryToken(Match));
     rateLimitService = moduleRef.get(RateLimitService);
-    messagesGateway = moduleRef.get(MessagesGateway);
   });
 
   afterEach(() => {

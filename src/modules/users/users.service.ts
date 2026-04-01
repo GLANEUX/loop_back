@@ -48,7 +48,7 @@ export class UsersService {
     private readonly discoveryService: DiscoveryService,
   ) {}
 
-    async blockUser(blockerUserId: string, blockedProfileId: string) {
+  async blockUser(blockerUserId: string, blockedProfileId: string) {
     const blockerProfile = await this.getOrCreateProfile(blockerUserId);
     if (blockerProfile.id === blockedProfileId) {
       throw new BadRequestException("Vous ne pouvez pas vous bloquer vous-même");
@@ -83,9 +83,9 @@ export class UsersService {
     await this.discoveryService.removeMatch(blockerProfile.id, blockedProfileId);
 
     return { ok: true };
-    }
+  }
 
-    async unblockUser(blockerUserId: string, blockedProfileId: string) {
+  async unblockUser(blockerUserId: string, blockedProfileId: string) {
     const blockerProfile = await this.getOrCreateProfile(blockerUserId);
     const block = await this.blockRepo.findOne({
       where: {
@@ -99,9 +99,9 @@ export class UsersService {
     }
 
     return { ok: true };
-    }
+  }
 
-    async listBlockedUsers(userId: string) {
+  async listBlockedUsers(userId: string) {
     const profile = await this.getOrCreateProfile(userId);
     const blocks = await this.blockRepo.find({
       where: { blockerProfileId: profile.id },
@@ -109,9 +109,9 @@ export class UsersService {
     });
 
     return blocks.map((b) => this.formatProfile(b.blockedProfile));
-    }
+  }
 
-    async isBlocked(profileAId: string, profileBId: string): Promise<boolean> {
+  async isBlocked(profileAId: string, profileBId: string): Promise<boolean> {
     const count = await this.blockRepo.count({
       where: [
         { blockerProfileId: profileAId, blockedProfileId: profileBId },
@@ -119,9 +119,9 @@ export class UsersService {
       ],
     });
     return count > 0;
-    }
+  }
 
-    async getBlockedProfileIds(profileId: string): Promise<string[]> {
+  async getBlockedProfileIds(profileId: string): Promise<string[]> {
     const blocks = await this.blockRepo.find({
       where: [{ blockerProfileId: profileId }, { blockedProfileId: profileId }],
       select: ["blockerProfileId", "blockedProfileId"],
@@ -133,7 +133,7 @@ export class UsersService {
       ids.add(b.blockedProfileId);
     });
     return Array.from(ids);
-    }
+  }
 
   async findByEmail(email: string) {
     return this.userRepo.findOne({
