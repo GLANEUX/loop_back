@@ -28,6 +28,7 @@ export type MessageStatus = "sent" | "delivered" | "read";
 @Injectable()
 export class MessagesService {
   constructor(
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     @InjectRepository(Message)
     private readonly messageRepo: Repository<Message>,
@@ -59,6 +60,15 @@ export class MessagesService {
       matchId,
       type === MessageType.System,
     );
+
+    // Block check
+    if (type !== MessageType.System && authorProfileId) {
+      const otherProfileId = isProfileA ? match.profileBId : match.profileAId;
+      const blocked = await this.usersService.isBlocked(authorProfileId, otherProfileId);
+      if (blocked) {
+        throw new ForbiddenException("Communication impossible (blocage en cours)");
+      }
+    }
 
     this.enforceRateLimits(userId, matchId, type === MessageType.System);
 

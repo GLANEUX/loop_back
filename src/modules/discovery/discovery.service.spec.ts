@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Not, Repository } from "typeorm";
 import { UsersService } from "@modules/users/users.service";
 import { UserRole } from "@modules/users/user-role.enum";
 import { Profile } from "@modules/users/profile.entity";
@@ -19,6 +19,7 @@ describe("DiscoveryService", () => {
   let matchRepo: jest.Mocked<Repository<Match>>;
   let messageRepo: jest.Mocked<Repository<Message>>;
   let profileRepo: jest.Mocked<Repository<Profile>>;
+  let messagesService: jest.Mocked<MessagesService>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -28,6 +29,13 @@ describe("DiscoveryService", () => {
           provide: UsersService,
           useValue: {
             getProfileForUser: jest.fn(),
+            getBlockedProfileIds: jest.fn(),
+          },
+        },
+        {
+          provide: MessagesService,
+          useValue: {
+            notifyNewMatch: jest.fn(),
           },
         },
         {
@@ -80,15 +88,18 @@ describe("DiscoveryService", () => {
     matchRepo = moduleRef.get(getRepositoryToken(Match));
     messageRepo = moduleRef.get(getRepositoryToken(Message));
     profileRepo = moduleRef.get(getRepositoryToken(Profile));
+    messagesService = moduleRef.get(MessagesService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("returns formatted discovery queue excluding swiped profiles", async () => {
+  it("returns formatted discovery queue excluding swiped and blocked profiles", async () => {
     usersService.getProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as Profile);
     swipeRepo.find.mockResolvedValueOnce([{ toProfileId: "profile-2" } as Swipe]);
+    usersService.getBlockedProfileIds.mockResolvedValueOnce(["profile-blocked"]);
+
     profileRepo.find.mockResolvedValueOnce([
       {
         id: "profile-3",
@@ -129,14 +140,11 @@ describe("DiscoveryService", () => {
       },
     ]);
 
-    expect(swipeRepo.find).toHaveBeenCalled();
-
+    expect(usersService.getBlockedProfileIds).toHaveBeenCalledWith("profile-1");
     expect(profileRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 20,
         where: expect.objectContaining({
-          isPublic: true,
-          user: { role: UserRole.User, deletedAt: expect.anything() },
+          id: Not(In(["profile-1", "profile-2", "profile-blocked"])),
         }),
       }),
     );

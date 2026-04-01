@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, IsNull, Repository } from "typeorm";
@@ -14,10 +16,12 @@ import { ProfileGenre } from "./profile-genre.entity";
 import { ProfileInstrument } from "./profile-instrument.entity";
 import { SocialLink } from "./social-link.entity";
 import { User } from "./user.entity";
+import { Block } from "./block.entity";
 import { InstrumentLevel, SocialPlatform } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 
 import { ProfileMedia, ProfileMediaType } from "./profile-media.entity";
+import { DiscoveryService } from "@modules/discovery/discovery.service";
 
 @Injectable()
 export class UsersService {
@@ -38,11 +42,102 @@ export class UsersService {
     private readonly profileMediaRepo: Repository<ProfileMedia>,
     @InjectRepository(SocialLink)
     private readonly socialLinkRepo: Repository<SocialLink>,
+    @InjectRepository(Block)
+    private readonly blockRepo: Repository<Block>,
+    @Inject(forwardRef(() => DiscoveryService))
+    private readonly discoveryService: DiscoveryService,
   ) {}
+
+    async blockUser(blockerUserId: string, blockedProfileId: string) {
+    const blockerProfile = await this.getOrCreateProfile(blockerUserId);
+    if (blockerProfile.id === blockedProfileId) {
+      throw new BadRequestException("Vous ne pouvez pas vous bloquer vous-même");
+    }
+
+    const blockedProfile = await this.profileRepo.findOne({
+      where: { id: blockedProfileId },
+    });
+    if (!blockedProfile) {
+      throw new NotFoundException("Profil à bloquer introuvable");
+    }
+
+    let block = await this.blockRepo.findOne({
+      where: {
+        blockerProfileId: blockerProfile.id,
+        blockedProfileId: blockedProfileId,
+      },
+      withDeleted: true,
+    });
+
+    if (block?.deletedAt) {
+      await this.blockRepo.restore(block.id);
+    } else if (!block) {
+      block = this.blockRepo.create({
+        blockerProfileId: blockerProfile.id,
+        blockedProfileId: blockedProfileId,
+      });
+      await this.blockRepo.save(block);
+    }
+
+    // Break any existing match
+    await this.discoveryService.removeMatch(blockerProfile.id, blockedProfileId);
+
+    return { ok: true };
+    }
+
+    async unblockUser(blockerUserId: string, blockedProfileId: string) {
+    const blockerProfile = await this.getOrCreateProfile(blockerUserId);
+    const block = await this.blockRepo.findOne({
+      where: {
+        blockerProfileId: blockerProfile.id,
+        blockedProfileId: blockedProfileId,
+      },
+    });
+
+    if (block) {
+      await this.blockRepo.softDelete(block.id);
+    }
+
+    return { ok: true };
+    }
+
+    async listBlockedUsers(userId: string) {
+    const profile = await this.getOrCreateProfile(userId);
+    const blocks = await this.blockRepo.find({
+      where: { blockerProfileId: profile.id },
+      relations: { blockedProfile: { user: true } },
+    });
+
+    return blocks.map((b) => this.formatProfile(b.blockedProfile));
+    }
+
+    async isBlocked(profileAId: string, profileBId: string): Promise<boolean> {
+    const count = await this.blockRepo.count({
+      where: [
+        { blockerProfileId: profileAId, blockedProfileId: profileBId },
+        { blockerProfileId: profileBId, blockedProfileId: profileAId },
+      ],
+    });
+    return count > 0;
+    }
+
+    async getBlockedProfileIds(profileId: string): Promise<string[]> {
+    const blocks = await this.blockRepo.find({
+      where: [{ blockerProfileId: profileId }, { blockedProfileId: profileId }],
+      select: ["blockerProfileId", "blockedProfileId"],
+    });
+
+    const ids = new Set<string>();
+    blocks.forEach((b) => {
+      ids.add(b.blockerProfileId);
+      ids.add(b.blockedProfileId);
+    });
+    return Array.from(ids);
+    }
 
   async findByEmail(email: string) {
     return this.userRepo.findOne({
-      where: { email: email.trim().toLowerCase() },
+      where: { email: this.normalizeEmail(email) },
     });
   }
 

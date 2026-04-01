@@ -24,6 +24,7 @@ const MAX_QUEUE_LIMIT = 50;
 @Injectable()
 export class DiscoveryService {
   constructor(
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     @InjectRepository(Swipe)
     private readonly swipeRepo: Repository<Swipe>,
@@ -97,8 +98,11 @@ export class DiscoveryService {
       where: { fromProfileId: currentProfile.id, deletedAt: IsNull() },
       select: ["toProfileId"],
     });
+    const blockedIds = await this.usersService.getBlockedProfileIds(currentProfile.id);
+
     const excludedIds = new Set<string>([currentProfile.id]);
     swipes.forEach((swipe) => excludedIds.add(swipe.toProfileId));
+    blockedIds.forEach((id) => excludedIds.add(id));
 
     const where: Record<string, unknown> = {
       isPublic: true,
@@ -353,7 +357,7 @@ export class DiscoveryService {
     }
   }
 
-  private async removeMatch(profileId: string, otherProfileId: string) {
+  async removeMatch(profileId: string, otherProfileId: string) {
     const { profileAId, profileBId } = this.normalizeMatchPair(profileId, otherProfileId);
     const match = await this.matchRepo.findOne({
       where: { profileAId, profileBId, deletedAt: IsNull() },

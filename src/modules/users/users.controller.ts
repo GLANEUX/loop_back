@@ -8,6 +8,7 @@ import {
   NotFoundException,
   Param,
   Patch,
+  Post,
   Req,
   Res,
   UploadedFile,
@@ -351,5 +352,42 @@ export class UsersController {
     }
     res.setHeader("Content-Type", "application/octet-stream");
     return res.send(avatar);
+  }
+
+  // ==========================================================
+  // CATEGORY: USER BLOCKS
+  // ==========================================================
+
+  @ApiTags("User Blocks")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Block a profile" })
+  @ApiResponse({ status: 200, description: "Profile blocked successfully" })
+  @Post("blocks/:id")
+  async blockUser(@Param("id") profileId: string, @Req() request: Request) {
+    if (!request.user?.id) return null;
+    return this.usersService.blockUser(request.user.id, profileId);
+  }
+
+  @ApiTags("User Blocks")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Unblock a profile" })
+  @ApiResponse({ status: 200, description: "Profile unblocked successfully" })
+  @Delete("blocks/:id")
+  async unblockUser(@Param("id") profileId: string, @Req() request: Request) {
+    if (!request.user?.id) return null;
+    return this.usersService.unblockUser(request.user.id, profileId);
+  }
+
+  @ApiTags("User Blocks")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List blocked profiles" })
+  @ApiOkResponse({ type: [ProfileDto] })
+  @Get("blocks")
+  async listBlockedUsers(@Req() request: Request) {
+    if (!request.user?.id) return [];
+    return this.usersService.listBlockedUsers(request.user.id);
   }
 }

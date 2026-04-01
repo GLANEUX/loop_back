@@ -18,6 +18,7 @@ describe("MessagesService", () => {
   let messageRepo: jest.Mocked<Repository<Message>>;
   let matchRepo: jest.Mocked<Repository<Match>>;
   let rateLimitService: jest.Mocked<RateLimitService>;
+  let messagesGateway: jest.Mocked<MessagesGateway>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -25,7 +26,7 @@ describe("MessagesService", () => {
         MessagesService,
         {
           provide: UsersService,
-          useValue: { getProfileForUser: jest.fn() },
+          useValue: { getProfileForUser: jest.fn(), isBlocked: jest.fn() },
         },
         {
           provide: getRepositoryToken(Message),
@@ -73,6 +74,7 @@ describe("MessagesService", () => {
     messageRepo = moduleRef.get(getRepositoryToken(Message));
     matchRepo = moduleRef.get(getRepositoryToken(Match));
     rateLimitService = moduleRef.get(RateLimitService);
+    messagesGateway = moduleRef.get(MessagesGateway);
   });
 
   afterEach(() => {
@@ -115,6 +117,21 @@ describe("MessagesService", () => {
 
     expect(result.status).toBe("sent");
     expect(result.body).toBe("Hello");
+  });
+
+  it("throws ForbiddenException when trying to message a blocked user", async () => {
+    usersService.getProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as Profile);
+    matchRepo.findOne.mockResolvedValueOnce({
+      id: "match-1",
+      profileAId: "profile-1",
+      profileBId: "profile-2",
+      deletedAt: null,
+    } as Match);
+    usersService.isBlocked.mockResolvedValueOnce(true);
+
+    await expect(service.sendMessage("user-1", "match-1", "hello")).rejects.toThrow(
+      "Communication impossible (blocage en cours)",
+    );
   });
 
   it("rejects sending a message when match is missing", async () => {

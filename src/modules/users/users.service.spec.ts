@@ -12,8 +12,10 @@ import { SocialLink } from "./social-link.entity";
 import { InstrumentLevel, SocialPlatform } from "./profile.enums";
 import { UserRole } from "./user-role.enum";
 import { User } from "./user.entity";
+import { Block } from "./block.entity";
 import { UsersService } from "./users.service";
 import { ProfileMedia, ProfileMediaType } from "./profile-media.entity";
+import { DiscoveryService } from "@modules/discovery/discovery.service";
 
 describe("UsersService", () => {
   let service: UsersService;
@@ -21,6 +23,8 @@ describe("UsersService", () => {
   let profileRepo: jest.Mocked<Repository<Profile>>;
   let profileMediaRepo: jest.Mocked<Repository<ProfileMedia>>;
   let socialLinkRepo: jest.Mocked<Repository<SocialLink>>;
+  let blockRepo: jest.Mocked<Repository<Block>>;
+  let discoveryService: jest.Mocked<DiscoveryService>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -100,6 +104,24 @@ describe("UsersService", () => {
             delete: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(Block),
+          useValue: {
+            findOne: jest.fn(),
+            find: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            count: jest.fn(),
+            softDelete: jest.fn(),
+            restore: jest.fn(),
+          },
+        },
+        {
+          provide: DiscoveryService,
+          useValue: {
+            removeMatch: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -108,6 +130,8 @@ describe("UsersService", () => {
     profileRepo = moduleRef.get(getRepositoryToken(Profile));
     profileMediaRepo = moduleRef.get(getRepositoryToken(ProfileMedia));
     socialLinkRepo = moduleRef.get(getRepositoryToken(SocialLink));
+    blockRepo = moduleRef.get(getRepositoryToken(Block));
+    discoveryService = moduleRef.get(DiscoveryService);
   });
 
   afterEach(() => {
@@ -355,6 +379,56 @@ describe("UsersService", () => {
         }),
       );
       expect(socialLinkRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe("Blocking Logic", () => {
+    it("blocks a user and breaks match", async () => {
+      userRepo.findOne.mockResolvedValue({ id: "u1", profile: { id: "p1" } } as any);
+      profileRepo.findOne.mockResolvedValue({ id: "p2" } as any);
+      blockRepo.findOne.mockResolvedValue(null);
+      blockRepo.create.mockReturnValue({ id: "b1" } as any);
+
+      const result = await service.blockUser("u1", "p2");
+
+      expect(result).toEqual({ ok: true });
+      expect(blockRepo.save).toHaveBeenCalled();
+      expect(discoveryService.removeMatch).toHaveBeenCalledWith("p1", "p2");
+    });
+
+    it("unblocks a user", async () => {
+      userRepo.findOne.mockResolvedValue({ id: "u1", profile: { id: "p1" } } as any);
+      blockRepo.findOne.mockResolvedValue({ id: "b1" } as any);
+
+      const result = await service.unblockUser("u1", "p2");
+
+      expect(result).toEqual({ ok: true });
+      expect(blockRepo.softDelete).toHaveBeenCalledWith("b1");
+    });
+
+    it("checks if users are blocked (either way)", async () => {
+      blockRepo.count.mockResolvedValueOnce(1);
+      const result = await service.isBlocked("p1", "p2");
+      expect(result).toBe(true);
+      expect(blockRepo.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: [{ blockerProfileId: "p1", blockedProfileId: "p2" }, { blockerProfileId: "p2", blockedProfileId: "p1" }],
+        }),
+      );
+    });
+
+    it("gets all blocked profile IDs for a user", async () => {
+      blockRepo.find.mockResolvedValue([
+        { blockerProfileId: "p1", blockedProfileId: "p2" },
+        { blockerProfileId: "p3", blockedProfileId: "p1" },
+      ] as any);
+
+      const result = await service.getBlockedProfileIds("p1");
+
+      expect(result).toContain("p1");
+      expect(result).toContain("p2");
+      expect(result).toContain("p3");
+      expect(result).toHaveLength(3);
     });
   });
 });
