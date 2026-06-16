@@ -10,12 +10,14 @@ describe("Profile Entity", () => {
       const result = Profile.validateProfile(profile);
       expect(result.isValid).toBe(false);
       expect(result.missingFields).toContain("firstName");
+      expect(result.missingFields).toContain("phoneNumber");
       expect(result.missingFields).toContain("bio");
       expect(result.missingFields).toContain("birthDate");
       expect(result.missingFields).toContain("gender");
       expect(result.missingFields).toContain("avatar");
       expect(result.missingFields).toContain("city");
       expect(result.missingFields).toContain("country");
+      expect(result.missingFields).toContain("audio_presentation");
       expect(result.missingFields).toContain("genres");
       expect(result.missingFields).toContain("instruments");
     });
@@ -23,12 +25,14 @@ describe("Profile Entity", () => {
     it("returns valid if all required fields are present", () => {
       const profile: any = {
         firstName: "John",
+        phoneNumber: "+33600000000",
         bio: "Musician bio",
         birthDate: "1990-01-01",
         gender: "Male",
         avatarMediaId: "avatar-id",
         city: "Paris",
         country: "France",
+        featuredAudioId: "audio-id",
         genres: [{ id: "g1" }],
         instruments: [{ id: "i1" }],
       };
@@ -40,12 +44,14 @@ describe("Profile Entity", () => {
     it("social links are optional and do not affect validity", () => {
       const profile: any = {
         firstName: "John",
+        phoneNumber: "+33600000000",
         bio: "Musician bio",
         birthDate: "1990-01-01",
         gender: "Male",
         avatarMediaId: "avatar-id",
         city: "Paris",
         country: "France",
+        featuredAudioId: "audio-id",
         genres: [{ id: "g1" }],
         instruments: [{ id: "i1" }],
         socialLinks: [{ platform: SocialPlatform.Instagram, url: "http://..." }],
