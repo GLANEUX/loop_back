@@ -113,12 +113,14 @@ export class Profile {
     const missingFields: string[] = [];
 
     if (!profile.firstName?.trim()) missingFields.push("firstName");
+    if (!profile.phoneNumber?.trim()) missingFields.push("phoneNumber");
     if (!profile.bio?.trim()) missingFields.push("bio");
     if (!profile.birthDate) missingFields.push("birthDate");
     if (!profile.gender?.trim()) missingFields.push("gender");
     if (!profile.avatarMediaId) missingFields.push("avatar");
     if (!profile.city?.trim()) missingFields.push("city");
     if (!profile.country?.trim()) missingFields.push("country");
+    if (!profile.featuredAudioId) missingFields.push("audio_presentation");
 
     if (!profile.genres || profile.genres.length === 0) {
       missingFields.push("genres");

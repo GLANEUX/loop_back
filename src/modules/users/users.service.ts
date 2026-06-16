@@ -508,6 +508,9 @@ export class UsersService {
     }
 
     if (socialLinks) {
+      if (socialLinks.length > 6) {
+        throw new BadRequestException("Maximum 6 liens sociaux autorisés");
+      }
       await this.socialLinkRepo.delete({ profileId: profileEntity.id });
       if (socialLinks.length > 0) {
         const links = socialLinks.map((link) =>
@@ -614,6 +617,24 @@ export class UsersService {
     options?: { isAvatar?: boolean; isFeatured?: boolean },
   ) {
     const profile = await this.getOrCreateProfile(userId);
+
+    const isReplacingAvatar = options?.isAvatar && type === ProfileMediaType.Image && profile.avatarMediaId;
+    const isReplacingFeatured = options?.isFeatured && type === ProfileMediaType.Audio && profile.featuredAudioId;
+
+    if (!isReplacingAvatar && !isReplacingFeatured) {
+      const existingCount = await this.profileMediaRepo.count({
+        where: { profileId: profile.id, type },
+      });
+
+      if (existingCount >= 6) {
+        const typeLabels = {
+          [ProfileMediaType.Image]: "images",
+          [ProfileMediaType.Audio]: "audios",
+          [ProfileMediaType.Video]: "vidéos",
+        };
+        throw new BadRequestException(`Maximum 6 ${typeLabels[type] || type} autorisés`);
+      }
+    }
 
     // If it's a replacement for avatar, we might want to delete the old one
     let oldAvatarId: string | null = null;
