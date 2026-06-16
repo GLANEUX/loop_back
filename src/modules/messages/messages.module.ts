@@ -12,7 +12,7 @@ import { MessagesGateway } from "./messages.gateway";
 @Module({
   imports: [
     TypeOrmModule.forFeature([Message, Match, Profile]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     forwardRef(() => AuthModule),
   ],
   controllers: [MessagesController],

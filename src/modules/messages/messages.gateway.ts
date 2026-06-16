@@ -31,6 +31,7 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   private readonly logger = new Logger(MessagesGateway.name);
 
   constructor(
+    @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @Inject(forwardRef(() => MessagesService))
     private readonly messagesService: MessagesService,

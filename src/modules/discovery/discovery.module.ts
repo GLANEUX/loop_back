@@ -14,8 +14,8 @@ import { MatchesController } from "./matches.controller";
 @Module({
   imports: [
     TypeOrmModule.forFeature([Swipe, Match, Profile, Message]),
-    UsersModule,
-    AuthModule,
+    forwardRef(() => UsersModule),
+    forwardRef(() => AuthModule),
     forwardRef(() => MessagesModule),
   ],
   providers: [DiscoveryService],
