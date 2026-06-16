@@ -22,9 +22,18 @@
 
 ## 1. Reprise en main
 
-- **État du projet au retour** : `<2-3 lignes : ce qui marchait, ce qui était cassé>`
-- **Temps pour le faire tourner** : `<ex. 25 min>`
-- **Frictions rencontrées** : `<doc manquante ? .env à reconstituer ? deps cassées ? coquille tsconfig-spaths dans package.json ?>`
+- **État du projet au retour** : l'app compile et la majorité des tests passent, mais plusieurs frictions empêchaient un démarrage « propre » immédiat (voir ci-dessous).
+- **Temps pour le faire tourner** : `<à compléter>`
+- **Frictions rencontrées** :
+  1. **Coquille dans `package.json`** : le script `seed` référençait `tsconfig-spaths`
+     (au lieu de `tsconfig-paths`) → cassait `npm run seed`. *Corrigé.*
+  2. **`dist/` appartenant à `root:root`** (créé par un conteneur Docker en root) :
+     `npm run build` échouait avec 213 erreurs `TS5033: EACCES permission denied`
+     — **pas une erreur de code**, juste l'impossibilité d'écrire dans `dist/`.
+     *Corrigé : suppression de `dist/` puis rebuild OK.*
+  3. **3 tests rouges au retour** (`profile.entity.spec.ts`, `discovery.service.spec.ts`) :
+     les fixtures n'avaient pas suivi l'ajout des champs profil obligatoires
+     (`phoneNumber`, `audio_presentation`). *Corrigé : filet remis à 111/111.*
 
 📸 **Capture obligatoire** : le projet qui démarre → `captures/01-reprise/projet-demarre.png`
 
@@ -36,8 +45,8 @@
 |---|---|
 | Vulnérabilités (`npm audit`) | **38** (1 critique, 17 high, 17 moderate, 3 low) |
 | Dépendances obsolètes (`npm outdated`) | ~32 packages, 9 majeures disponibles |
-| Build / lint OK ? | `<OK / KO + détail>` |
-| Nb de tests / couverture | 19 specs + 4 e2e — `<n tests, x% cov>` |
+| Build / lint OK ? | Build ✅ OK (après correctif `dist/`) · Lint ✅ 0 erreur, 2 warnings prettier |
+| Nb de tests / couverture | **111 tests** (19 suites) — verts après correctif fixtures — couverture `<à compléter via npm run test:cov>` |
 | (Back) temps de réponse clé | `<ex. GET /discovery/queue : X ms>` |
 
 📸 **Captures obligatoires** :

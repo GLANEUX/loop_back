@@ -3,9 +3,17 @@
 > Log horodaté de la journée, **y compris les impasses** (c'est valorisé).
 > Format : `HHhMM — action → observation → décision`.
 
-- `09h00` — Lecture de l'énoncé, prise en main du projet. État au retour : `<…>`
-- `09hXX` — Capture de l'état « Avant » : `npm audit` (38 vulns), `npm outdated`, `npm test`.
-- `09hXX` — Backup `package-lock.json` (point de rollback).
+- `09h00` — Lecture de l'énoncé, analyse du projet (NestJS 11, 19 suites de tests).
+- `09hXX` — **Nettoyage Git** : WIP block non commité rangé en 2 commits atomiques sur
+  `feat/block` ; coquille `package.json` (`tsconfig-spaths`) réparée ; branche `tp/dev-legacy`
+  créée depuis `feat/block`.
+- `09hXX` — Backup `package-lock.json` → `package-lock.json.bak` (point de rollback).
+- `09hXX` — **Friction build** : `npm run build` → 213 erreurs `TS5033 EACCES`.
+  Diagnostic : `dist/` appartenait à `root:root` (conteneur Docker). → `rm -rf dist` → rebuild OK.
+- `09hXX` — **Friction tests** : 3 tests rouges (fixtures profil périmées vs nouveaux champs
+  obligatoires `phoneNumber`/`audio_presentation`). → fixtures mises à jour → **111/111 verts**.
+- `09hXX` — État « Avant » figé : 38 vulns (`npm audit`), ~32 deps obsolètes, build ✅, 111 tests ✅.
+  Captures à faire : `npm audit`, `npm outdated`, `npm test`.
 
 ### C1 — Sécurité
 - `10hXX` — `npm audit fix` ciblé `@nestjs/core` → `<résultat, vulns restantes>`.
