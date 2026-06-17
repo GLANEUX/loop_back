@@ -177,9 +177,15 @@ cp package-lock.json.bak package-lock.json && npm ci
 
 ## 6. C3 — Évolutif
 
-- **Besoin** : `<pourquoi cette feature>`
-- **Implémentation** : `<ce qui a été ajouté + fichiers>`
-- **Test** : `<nom du test>`
+- **Besoin** : l'écran « utilisateurs bloqués » ne donnait qu'une liste brute de profils —
+  ni date de blocage, ni ordre, ni recherche. Peu exploitable dès qu'on a plusieurs blocages.
+- **Implémentation** (`GET /user/blocks`) :
+  - chaque entrée porte désormais un champ **`blocked_at`** (date du blocage) ;
+  - résultats triés **du plus récemment bloqué au plus ancien** (`order: createdAt DESC`) ;
+  - paramètre optionnel **`?search=`** filtrant par prénom / nom / pseudo (insensible à la casse).
+  - Fichiers : `users.service.ts` (`listBlockedUsers`), `users.controller.ts` (`@Query("search")`).
+- **Test** : `lists blocked profiles with a blocked_at date, most recent first` +
+  `filters blocked profiles by search term (name or pseudo)`. Suite **114/114**.
 
 📸 `captures/06-c3/feature-demo.png` · `captures/06-c3/test-c3-vert.png` · `captures/06-c3/diff-c3.png`
 
@@ -192,11 +198,11 @@ cp package-lock.json.bak package-lock.json && npm ci
 
 | Indicateur | Avant | Après |
 |---|---|---|
-| Vulnérabilités (`npm audit`) | 38 | `<X>` |
-| Dépendances obsolètes | ~32 | `<M>` |
-| Build / lint OK ? | `<…>` | `<…>` |
-| Nb de tests / couverture | `<…>` | `<…>` (tests ajoutés C2/C3) |
-| Temps de réponse clé | `<…>` | `<…>` |
+| Vulnérabilités (`npm audit`) | **38** (1 crit / 17 high / 17 mod / 3 low) | **20** (modérées only) |
+| Dépendances obsolètes | ~32 | réduit (2 majeures montées : Jest 30, uuid 14) |
+| Build / lint OK ? | Build ✅ / lint ✅ (2 warnings) | Build ✅ / `tsc --noEmit` ✅ |
+| Nb de tests | 111 | **114** (+3 : 1 régression C2, 2 feature C3) |
+| Comportement blocage | profil bloqué pouvait réapparaître (threads) | **corrigé** (garde `isBlocked` au swipe) |
 
 📸 `captures/07-apres/npm-audit-apres.png` · `captures/07-apres/historique-git.png` · `captures/07-apres/pr.png`
 
@@ -204,8 +210,20 @@ cp package-lock.json.bak package-lock.json && npm ci
 
 ## 8. Bilan & rétro legacy
 
-- **Ce que les vieilles deps / le vieux code ont coûté** : `<temps perdu, pièges>`
-- **Ce qu'on changerait dans nos habitudes** : `<tests systématiques, mises à jour régulières (Dependabot), doc .env, commits atomiques…>`
+- **Ce que les vieilles deps / le vieux code ont coûté** :
+  - 38 vulnérabilités accumulées (dont 1 critique + 17 high) faute de mises à jour régulières.
+  - Une **base Docker arrêtée** + un conteneur sur réseau périmé → ~temps perdu à diagnostiquer
+    un `EAI_AGAIN` qui n'était pas un bug de code.
+  - Des **tests périmés** (fixtures non suivies après évolution du modèle) masquaient un filet rouge.
+  - Un **résidu de config** (`.env` Prisma, coquille `tsconfig-spaths`) source de confusion.
+  - Une incohérence de sécurité (blocage vérifié à l'envoi de message mais **pas au swipe**).
+- **Ce qu'on changerait dans nos habitudes** :
+  - **Mises à jour régulières** (Dependabot / `npm audit` en CI) plutôt qu'un gros rattrapage.
+  - **Filet vert obligatoire en CI** : un test rouge ne doit jamais être mergé.
+  - **Mettre à jour les tests en même temps que le modèle** (les fixtures font partie du code).
+  - **Centraliser les règles transverses** (ex. un guard de blocage réutilisé) pour éviter qu'une
+    nouvelle voie d'accès (swipe) oublie la règle.
+  - **Documenter le démarrage** (`.env.development`, `docker compose up --force-recreate`).
 
 ---
 

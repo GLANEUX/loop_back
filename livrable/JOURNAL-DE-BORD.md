@@ -43,8 +43,9 @@
   `sendMessage` oui) ; `blockUser` ne supprime que le match, pas les swipes `isLike`.
 - `14hXX` — Fix : garde `isBlocked` avant `ensureMatch`. Test rouge → vert. Suite 112/112. Commit.
 
-### C3 — Évolutif
-- `15hXX` — Feature `<…>` implémentée + test.
+### C3 — Évolutif (enrichir liste des bloqués)
+- `15hXX` — `GET /user/blocks` : ajout `blocked_at`, tri plus-récent-d'abord, `?search=` (nom/pseudo).
+  Fichiers : users.service.ts, users.controller.ts (+ `@Query`). 2 tests ajoutés. Suite 114/114.
 
 ### Clôture
 - `16hXX` — `npm audit` après : `<X>` vulns. Tableau « Après » rempli.
