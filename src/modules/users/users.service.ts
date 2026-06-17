@@ -634,8 +634,10 @@ export class UsersService {
   ) {
     const profile = await this.getOrCreateProfile(userId);
 
-    const isReplacingAvatar = options?.isAvatar && type === ProfileMediaType.Image && profile.avatarMediaId;
-    const isReplacingFeatured = options?.isFeatured && type === ProfileMediaType.Audio && profile.featuredAudioId;
+    const isReplacingAvatar =
+      options?.isAvatar && type === ProfileMediaType.Image && profile.avatarMediaId;
+    const isReplacingFeatured =
+      options?.isFeatured && type === ProfileMediaType.Audio && profile.featuredAudioId;
 
     if (!isReplacingAvatar && !isReplacingFeatured) {
       const existingCount = await this.profileMediaRepo.count({

@@ -459,8 +459,14 @@ describe("UsersService", () => {
     it("filters blocked profiles by search term (name or pseudo)", async () => {
       userRepo.findOne.mockResolvedValue({ id: "u1", profile: { id: "p1" } } as any);
       blockRepo.find.mockResolvedValue([
-        { createdAt: new Date(), blockedProfile: { id: "p2", firstName: "Alice", user: { pseudo: "alice" } } },
-        { createdAt: new Date(), blockedProfile: { id: "p3", firstName: "Bob", user: { pseudo: "bobby" } } },
+        {
+          createdAt: new Date(),
+          blockedProfile: { id: "p2", firstName: "Alice", user: { pseudo: "alice" } },
+        },
+        {
+          createdAt: new Date(),
+          blockedProfile: { id: "p3", firstName: "Bob", user: { pseudo: "bobby" } },
+        },
       ] as any);
 
       const result = await service.listBlockedUsers("u1", "bob");
