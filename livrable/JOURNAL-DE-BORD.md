@@ -13,7 +13,10 @@
 - `09hXX` — **Friction tests** : 3 tests rouges (fixtures profil périmées vs nouveaux champs
   obligatoires `phoneNumber`/`audio_presentation`). → fixtures mises à jour → **111/111 verts**.
 - `09hXX` — État « Avant » figé : 38 vulns (`npm audit`), ~32 deps obsolètes, build ✅, 111 tests ✅.
-  Captures à faire : `npm audit`, `npm outdated`, `npm test`.
+  Captures faites : `npm audit`, `npm outdated`, `npm test`.
+- `10hXX` — **Friction Docker** : `loop_db_dev` arrêté depuis 2 mois → API en `EAI_AGAIN db`.
+  `restart` insuffisant (réseau périmé) → `docker compose up -d --force-recreate` →
+  API up sur :3001 ("🚀 API running on port 3001"). Capture `projet-demarre` à faire.
 
 ### C1 — Sécurité
 - `10hXX` — `npm audit fix` ciblé `@nestjs/core` → `<résultat, vulns restantes>`.

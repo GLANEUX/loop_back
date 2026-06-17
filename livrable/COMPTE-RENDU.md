@@ -34,6 +34,21 @@
   3. **3 tests rouges au retour** (`profile.entity.spec.ts`, `discovery.service.spec.ts`) :
      les fixtures n'avaient pas suivi l'ajout des champs profil obligatoires
      (`phoneNumber`, `audio_presentation`). *Corrigé : filet remis à 111/111.*
+  4. **Base de données down + réseau Docker périmé** : `loop_db_dev` était arrêté depuis
+     2 mois ; l'API tournait mais ne résolvait plus l'hôte `db` (`getaddrinfo EAI_AGAIN db`).
+     Un `restart` ne suffisait pas (conteneur API attaché à un état réseau périmé).
+     *Corrigé : `docker compose ... up -d --force-recreate` → API up sur le port 3001.*
+
+### Démarrage (procédure reproductible)
+> Variables : rien à ajouter — l'app lit `.env.${NODE_ENV}` soit **`.env.development`**, déjà
+> complet (`DATABASE_URL` → `db:5432`, `JWT_SECRET`, …). Le `.env` racine (URL Prisma) est un
+> résidu **non utilisé** par ce projet NestJS/TypeORM.
+
+```bash
+docker compose -f docker/dev/docker-compose.yml up -d --force-recreate
+docker compose -f docker/dev/docker-compose.yml exec api npm run migration:run:dev  # si pending
+docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
+```
 
 📸 **Capture obligatoire** : le projet qui démarre → `captures/01-reprise/projet-demarre.png`
 
