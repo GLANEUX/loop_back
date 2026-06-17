@@ -32,10 +32,16 @@
 - `11hXX` — Vérif type-check : `@types/jest` 30 garde `SpyInstance` (alias) → `tsc` propre.
   Modernisation quand même : `SpyInstance` → `jest.Spied`. tsc propre, 111/111, build OK. Commit.
 
-### C2 — Correctif
-- `13hXX` — Reproduction du bug `<…>` (avant de corriger).
-- `13hXX` — Cause racine : `<…>`.
-- `14hXX` — Test rouge ajouté → fix → test vert.
+### C1 — Bonus 2ᵉ majeure uuid 13 → 14
+- `12hXX` — Lecture changelog uuid v14 (Node ≥20, TS ≥5.4.3 — déjà OK ; `import { v4 }` inchangé).
+  Upgrade `uuid@^14`. tsc/tests/build OK + sanity runtime v4. Sans refacto (peu épineux).
+
+### C2 — Correctif (fuite profils bloqués)
+- `13hXX` — Symptôme : un profil bloqué réapparaît dans `GET /messages/threads`.
+- `13hXX` — Repro (test rouge) : `swipe()` restaure un match soft-deleted malgré le blocage.
+- `13hXX` — **Cause racine** : `swipe()`/`ensureMatch` ne vérifiait pas `isBlocked` (alors que
+  `sendMessage` oui) ; `blockUser` ne supprime que le match, pas les swipes `isLike`.
+- `14hXX` — Fix : garde `isBlocked` avant `ensureMatch`. Test rouge → vert. Suite 112/112. Commit.
 
 ### C3 — Évolutif
 - `15hXX` — Feature `<…>` implémentée + test.

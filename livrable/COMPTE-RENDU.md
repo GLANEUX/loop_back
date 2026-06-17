@@ -149,11 +149,24 @@ cp package-lock.json.bak package-lock.json && npm ci
 
 ## 5. C2 — Correctif
 
-- **Symptôme observé** : `<ce que voit l'utilisateur / l'API>`
-- **Reproduction** (avant fix) : `<étapes / appels API exacts>`
-- **Cause racine** : `<le pourquoi technique précis>`
-- **Correction** : `<ce qui a été changé + fichier:ligne>`
-- **Test de non-régression** : `<nom du test ajouté>`
+- **Symptôme observé** : un profil **bloqué** réapparaît dans `GET /messages/threads`
+  (et redevient joignable en messages temps réel) alors que le blocage est actif.
+- **Reproduction** (avant fix) :
+  1. A et B se likent → match créé.
+  2. A bloque B (`POST /user/blocks/:id`) → `blockUser` soft-delete le match → thread disparu ✅.
+  3. B rappelle `POST /swipes { targetProfileId: A, isLike: true }` **en direct** (l'endpoint
+     ne passe pas par la queue qui filtre les bloqués).
+  4. Le like réciproque de A subsiste → `ensureMatch` **restaure** le match soft-deleted.
+  5. A appelle `GET /messages/threads` → **le profil de B réapparaît**.
+  - Reproduit par un test unitaire rouge sur `DiscoveryService.swipe` (match restauré malgré blocage).
+- **Cause racine** : `swipe()` ([discovery.service.ts:174](../src/modules/discovery/discovery.service.ts#L174))
+  (re)créait/restaurait un match via `ensureMatch` **sans vérifier `isBlocked`**, alors que
+  `sendMessage` le faisait déjà. `blockUser` ne supprime que le match, pas les swipes `isLike` :
+  un swipe direct pouvait donc reformer le match.
+- **Correction** : ajout d'un garde `isBlocked` avant `ensureMatch` dans `swipe()` — aucun match
+  n'est (re)formé entre profils bloqués (cohérent avec `sendMessage`).
+- **Test de non-régression** : `DiscoveryService › does not (re)create a match between blocked
+  profiles on swipe` (passe de rouge à vert). Suite : **112/112**.
 
 📸 `captures/05-c2/comportement-avant.png` · `captures/05-c2/comportement-apres.png` · `captures/05-c2/test-c2-vert.png` · `captures/05-c2/diff-c2.png`
 
