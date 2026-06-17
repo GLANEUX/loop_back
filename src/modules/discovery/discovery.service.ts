@@ -182,9 +182,15 @@ export class DiscoveryService {
       });
 
       if (reciprocal) {
-        const match = await this.ensureMatch(currentProfile.id, targetProfileId);
-        matchCreated = match.created;
-        matchId = match.match.id;
+        // Never (re)form a match between blocked profiles: otherwise a blocked
+        // user could restore a broken match via a direct swipe and reappear in
+        // the other user's threads/messages.
+        const blocked = await this.usersService.isBlocked(currentProfile.id, targetProfileId);
+        if (!blocked) {
+          const match = await this.ensureMatch(currentProfile.id, targetProfileId);
+          matchCreated = match.created;
+          matchId = match.match.id;
+        }
       }
     } else {
       await this.removeMatch(currentProfile.id, targetProfileId);
