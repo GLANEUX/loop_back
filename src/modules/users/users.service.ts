@@ -101,14 +101,30 @@ export class UsersService {
     return { ok: true };
   }
 
-  async listBlockedUsers(userId: string) {
+  async listBlockedUsers(userId: string, search?: string) {
     const profile = await this.getOrCreateProfile(userId);
     const blocks = await this.blockRepo.find({
       where: { blockerProfileId: profile.id },
       relations: { blockedProfile: { user: true } },
+      order: { createdAt: "DESC" },
     });
 
-    return blocks.map((b) => this.formatProfile(b.blockedProfile));
+    const term = search?.trim().toLowerCase();
+    const matching = term
+      ? blocks.filter((b) => {
+          const p = b.blockedProfile;
+          return (
+            p?.firstName?.toLowerCase().includes(term) ||
+            p?.lastName?.toLowerCase().includes(term) ||
+            p?.user?.pseudo?.toLowerCase().includes(term)
+          );
+        })
+      : blocks;
+
+    return matching.map((b) => ({
+      ...this.formatProfile(b.blockedProfile),
+      blocked_at: b.createdAt,
+    }));
   }
 
   async isBlocked(profileAId: string, profileBId: string): Promise<boolean> {

@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -383,11 +384,15 @@ export class UsersController {
   @ApiTags("User Blocks")
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "List blocked profiles" })
+  @ApiOperation({
+    summary: "List blocked profiles",
+    description:
+      "Returns blocked profiles ordered by most recently blocked, each with a `blocked_at` date. Optional `search` filters by first name, last name or pseudo.",
+  })
   @ApiOkResponse({ type: [ProfileDto] })
   @Get("blocks")
-  async listBlockedUsers(@Req() request: Request) {
+  async listBlockedUsers(@Req() request: Request, @Query("search") search?: string) {
     if (!request.user?.id) return [];
-    return this.usersService.listBlockedUsers(request.user.id);
+    return this.usersService.listBlockedUsers(request.user.id, search);
   }
 }

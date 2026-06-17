@@ -433,5 +433,40 @@ describe("UsersService", () => {
       expect(result).toContain("p3");
       expect(result).toHaveLength(3);
     });
+
+    it("lists blocked profiles with a blocked_at date, most recent first", async () => {
+      userRepo.findOne.mockResolvedValue({ id: "u1", profile: { id: "p1" } } as any);
+      const blockedAt = new Date("2026-06-10T10:00:00.000Z");
+      blockRepo.find.mockResolvedValue([
+        {
+          createdAt: blockedAt,
+          blockedProfile: { id: "p2", firstName: "Bob", user: { pseudo: "bob" } },
+        },
+      ] as any);
+
+      const result = await service.listBlockedUsers("u1");
+
+      expect(blockRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { blockerProfileId: "p1" },
+          order: { createdAt: "DESC" },
+        }),
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ id: "p2", blocked_at: blockedAt });
+    });
+
+    it("filters blocked profiles by search term (name or pseudo)", async () => {
+      userRepo.findOne.mockResolvedValue({ id: "u1", profile: { id: "p1" } } as any);
+      blockRepo.find.mockResolvedValue([
+        { createdAt: new Date(), blockedProfile: { id: "p2", firstName: "Alice", user: { pseudo: "alice" } } },
+        { createdAt: new Date(), blockedProfile: { id: "p3", firstName: "Bob", user: { pseudo: "bobby" } } },
+      ] as any);
+
+      const result = await service.listBlockedUsers("u1", "bob");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("p3");
+    });
   });
 });
