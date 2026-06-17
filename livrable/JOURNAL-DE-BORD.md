@@ -19,7 +19,9 @@
   API up sur :3001 ("🚀 API running on port 3001"). Capture `projet-demarre` à faire.
 
 ### C1 — Sécurité
-- `10hXX` — `npm audit fix` ciblé `@nestjs/core` → `<résultat, vulns restantes>`.
+- `11hXX` — `npm audit fix --dry-run` pour comprendre l'impact (116 paquets, non-breaking).
+- `11hXX` — `npm audit fix` appliqué → **38 → 21 vulns** (critique + 17 high + 3 low éliminés).
+  Seul `package-lock.json` modifié. `npm test` → **111/111**. `npm run build` → OK. Commit atomique.
 
 ### C1 — Majeure Jest 29 → 30
 - `10hXX` — Suite verte avant upgrade (filet figé).

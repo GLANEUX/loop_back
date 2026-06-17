@@ -87,12 +87,18 @@ docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
 
 ### 4.1 Dépendances montées (avant → après)
 
+**Volet sécurité** — `npm audit fix` (non-breaking, sans `--force`) : seul `package-lock.json`
+a changé (les bornes `^` de `package.json` couvraient déjà les correctifs).
+
 | Dépendance | Avant | Après | Type |
 |---|---|---|---|
-| `@nestjs/core` | 11.1.6 | 11.1.27 | faille **high** corrigée |
-| `body-parser` / `ajv` | `<…>` | `<…>` | failles corrigées |
-| `jest` | 29.7.0 | 30.x | **majeure** (breaking) |
-| `@types/jest` | 29.x | 30.x | aligné |
+| `@nestjs/core` | 11.1.6 | 11.1.27 | faille **high** corrigée (injection path-to-regexp) |
+| `ws`, `body-parser`, `@babel/core`, `brace-expansion`… | (transitifs) | corrigés | failles critique/high/low |
+| `jest` | 29.7.0 | 30.x | **majeure** (breaking) — *en cours* |
+| `@types/jest` | 29.x | 30.x | aligné — *en cours* |
+
+**Résultat sécurité mesuré** : **38 → 21 vulnérabilités** (1 critique + 17 high + 3 low **éliminés** ;
+restent 21 modérées). Filet vert maintenu : 111/111.
 
 ### 4.2 Breaking changes rencontrés (Jest 30)
 - `<breaking change #1 + extrait du changelog officiel>`
