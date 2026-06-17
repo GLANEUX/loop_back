@@ -100,19 +100,39 @@ a changé (les bornes `^` de `package.json` couvraient déjà les correctifs).
 **Résultat sécurité mesuré** : **38 → 21 vulnérabilités** (1 critique + 17 high + 3 low **éliminés** ;
 restent 21 modérées). Filet vert maintenu : 111/111.
 
-### 4.2 Breaking changes rencontrés (Jest 30)
-- `<breaking change #1 + extrait du changelog officiel>`
-- `<breaking change #2>`
+### 4.2 Breaking changes Jest 30 — analyse d'exposition (guide officiel lu AVANT)
 
-📎 **Extrait du changelog / guide de migration** : `<coller le passage cité>`
+Source : <https://jestjs.io/docs/upgrading-to-jest30>. Chaque breaking change a été
+confronté à notre code **avant** d'upgrader :
+
+| Breaking change (Jest 30) | Notre exposition | Action |
+|---|---|---|
+| Node ≥ 18 requis | Node **20.19** ✅ | aucune |
+| TypeScript ≥ 5.4 requis | TS **5.9** ✅ | aucune |
+| `jest-environment-jsdom` → JSDOM v26 | `testEnvironment: "node"` → **N/A** | aucune |
+| Alias matchers supprimés (`toThrowError`, `toBeCalled`, `toReturn`…) | `grep` → **0 occurrence** | aucune |
+| `jest.genMockFromModule` supprimé, deep-imports cassés | **non utilisés** | aucune |
+| Type `SpyInstance` déprécié | 1 occurrence (`health.service.spec.ts:11`) | **modernisé → `jest.Spied`** |
+| Inférence stricte de `toHaveBeenCalledWith` | tests verts, aucun faux positif | aucune |
+
+📎 **Extrait du guide cité** : *« Jest 30 drops support for Node 14, 16, 19, and 21. The minimum
+supported Node versions are now 18.x. »* et *« The minimum TypeScript version is now 5.4. »*
+
+> **Conclusion** : montée majeure à faible friction **parce que** le projet maintient Node/TS à
+> jour et utilise `testEnvironment: node`. Leçon reprise en §8 (rétro).
 
 ### 4.3 Code adapté
-- `<fichier + nature du refacto : bloc jest{} de package.json, specs impactées…>`
+- `src/modules/health/health.service.spec.ts` : `let loggerErrorSpy: jest.SpyInstance` →
+  `jest.Spied<typeof Logger.prototype.error>` (type recommandé par le guide Jest 30).
+- `package.json` : `jest ^29.7→^30.4`, `@types/jest ^29→^30`, `ts-jest ^29.2→^29.4.11`.
+- **Preuves** : `tsc --noEmit` propre, 111/111 tests verts, build OK.
 
 ### 4.4 Plan de rollback
 ```bash
-git revert <hash-commit-c1>
-cp package-lock.json.bak package-lock.json && npm ci   # retour à l'état figé
+# Annuler les commits C1 (sécurité + Jest 30)
+git revert e6143fb 0c7f55f
+# ou retour direct à l'état figé du verrou de dépendances
+cp package-lock.json.bak package-lock.json && npm ci
 ```
 
 ### 4.5 Preuves

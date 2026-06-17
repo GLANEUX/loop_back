@@ -24,10 +24,13 @@
   Seul `package-lock.json` modifié. `npm test` → **111/111**. `npm run build` → OK. Commit atomique.
 
 ### C1 — Majeure Jest 29 → 30
-- `10hXX` — Suite verte avant upgrade (filet figé).
-- `10hXX` — Lecture du guide de migration Jest 30 : breaking changes notés `<…>`.
-- `11hXX` — `npm i -D jest@30 @types/jest@30` → build/test cassé sur `<…>` → corrigé par `<…>`.
-- `11hXX` — Suite verte après adaptation.
+- `11hXX` — Lecture du guide officiel (upgrading-to-jest30) AVANT upgrade. `grep` des patterns
+  cassants : 0 matcher déprécié, 1 seul `jest.SpyInstance` (health.service.spec.ts).
+- `11hXX` — `npm i -D jest@^30 @types/jest@^30 ts-jest@latest` → jest 30.4.2, ts-jest 29.4.11.
+  Bonus vulns 21 → 20.
+- `11hXX` — `npm test` direct → **111/111** (ts-jest ne type-check pas au runtime).
+- `11hXX` — Vérif type-check : `@types/jest` 30 garde `SpyInstance` (alias) → `tsc` propre.
+  Modernisation quand même : `SpyInstance` → `jest.Spied`. tsc propre, 111/111, build OK. Commit.
 
 ### C2 — Correctif
 - `13hXX` — Reproduction du bug `<…>` (avant de corriger).
