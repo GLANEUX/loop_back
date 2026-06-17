@@ -94,8 +94,10 @@ a changé (les bornes `^` de `package.json` couvraient déjà les correctifs).
 |---|---|---|---|
 | `@nestjs/core` | 11.1.6 | 11.1.27 | faille **high** corrigée (injection path-to-regexp) |
 | `ws`, `body-parser`, `@babel/core`, `brace-expansion`… | (transitifs) | corrigés | failles critique/high/low |
-| `jest` | 29.7.0 | 30.x | **majeure** (breaking) — *en cours* |
-| `@types/jest` | 29.x | 30.x | aligné — *en cours* |
+| `jest` | 29.7.0 | 30.4.2 | **majeure** (breaking) |
+| `@types/jest` | 29.5 | 30.0 | aligné |
+| `ts-jest` | 29.2 | 29.4.11 | compat Jest 30 |
+| `uuid` | 13.0.0 | 14.0.0 | **majeure** (2ᵉ) |
 
 **Résultat sécurité mesuré** : **38 → 21 vulnérabilités** (1 critique + 17 high + 3 low **éliminés** ;
 restent 21 modérées). Filet vert maintenu : 111/111.
@@ -125,6 +127,8 @@ supported Node versions are now 18.x. »* et *« The minimum TypeScript version 
 - `src/modules/health/health.service.spec.ts` : `let loggerErrorSpy: jest.SpyInstance` →
   `jest.Spied<typeof Logger.prototype.error>` (type recommandé par le guide Jest 30).
 - `package.json` : `jest ^29.7→^30.4`, `@types/jest ^29→^30`, `ts-jest ^29.2→^29.4.11`.
+- **uuid 13 → 14** (2ᵉ majeure) : aucune adaptation de code requise (`import { v4 }` inchangé,
+  Node 20 / TS 5.9 déjà conformes). Vérifié par sanity runtime (génération v4 valide en CJS).
 - **Preuves** : `tsc --noEmit` propre, 111/111 tests verts, build OK.
 
 ### 4.4 Plan de rollback
