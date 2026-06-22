@@ -1,29 +1,24 @@
 # Compte-rendu de mission — Dev Legacy
 
-> **Rendu final attendu en PDF.** Ce `.md` est la source : tu le remplis au fil de l'eau,
-> tu déposes les captures dans `livrable/captures/<section>/`, puis tu exportes en PDF.
-> ⚠️ Masquer tout secret / clé / mot de passe dans les captures.
+> **Rendu final attendu en PDF** (exporter ce document). Captures incluses depuis
+> `livrable/captures/`. Secrets / clés / mots de passe masqués dans toutes les captures.
 
 ---
 
 ## 0. Page de garde
 
 - **Projet** : Loop — Back-end API (NestJS + TypeScript + TypeORM + PostgreSQL)
-- **Équipe & rôles** :
-  - `<Nom 1>` — `<rôle / chantiers>`
-  - `<Nom 2>` — `<rôle / chantiers>`
+- **Auteur** : **Océane GLANEUX** — développeuse (3 chantiers : C1, C2, C3)
 - **Lien du dépôt** : https://github.com/GLANEUX/loop_back
 - **Lien de la PR** (accès lecture `@celianlb`) : https://github.com/GLANEUX/loop_back/pull/11
 - **Date de la mission** : 2026-06-16
-
-> *(Groupe)* Qui a fait quoi — voir aussi le détail en fin de chaque chantier.
 
 ---
 
 ## 1. Reprise en main
 
 - **État du projet au retour** : l'app compile et la majorité des tests passent, mais plusieurs frictions empêchaient un démarrage « propre » immédiat (voir ci-dessous).
-- **Temps pour le faire tourner** : `<à compléter>`
+- **Temps pour le faire tourner** : ~30 min (essentiellement le diagnostic des frictions ci-dessous : `dist/` en root, base Docker arrêtée, fixtures périmées).
 - **Frictions rencontrées** :
   1. **Coquille dans `package.json`** : le script `seed` référençait `tsconfig-spaths`
      (au lieu de `tsconfig-paths`) → cassait `npm run seed`. *Corrigé.*
@@ -50,7 +45,9 @@ docker compose -f docker/dev/docker-compose.yml exec api npm run migration:run:d
 docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
 ```
 
-📸 **Capture obligatoire** : le projet qui démarre → `captures/01-reprise/projet-demarre.png`
+**📸 Le projet qui démarre :**
+
+![API démarrée sur le port 3001](captures/01-reprise/projet-demarre.png)
 
 ---
 
@@ -61,13 +58,27 @@ docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
 | Vulnérabilités (`npm audit`) | **38** (1 critique, 17 high, 17 moderate, 3 low) |
 | Dépendances obsolètes (`npm outdated`) | ~32 packages, 9 majeures disponibles |
 | Build / lint OK ? | Build ✅ OK (après correctif `dist/`) · Lint ✅ 0 erreur, 2 warnings prettier |
-| Nb de tests / couverture | **111 tests** (19 suites) — verts après correctif fixtures — couverture `<à compléter via npm run test:cov>` |
-| (Back) temps de réponse clé | `<ex. GET /discovery/queue : X ms>` |
+| Nb de tests / couverture | **111 tests** (19 suites) — verts après correctif fixtures — couverture **72,8 %** lignes (53,97 % branches) |
+| (Back) temps de réponse clé | *(optionnel — non mesuré)* |
 
-📸 **Captures obligatoires** :
-- `captures/02-avant/npm-audit-avant.png`
-- `captures/02-avant/npm-outdated-avant.png`
-- `captures/02-avant/tests-verts-avant.png`
+**📸 `npm audit` (avant) — 38 vulnérabilités :**
+
+![npm audit avant 1/6](captures/02-avant/npm-audit-avant-1.png)
+![npm audit avant 2/6](captures/02-avant/npm-audit-avant-2.png)
+![npm audit avant 3/6](captures/02-avant/npm-audit-avant-3.png)
+![npm audit avant 4/6](captures/02-avant/npm-audit-avant-4.png)
+![npm audit avant 5/6](captures/02-avant/npm-audit-avant-5.png)
+![npm audit avant 6/6 (résumé : 38 vulnérabilités)](captures/02-avant/npm-audit-avant-6.png)
+
+**📸 `npm outdated` (avant) — ampleur du retard :**
+
+![npm outdated avant](captures/02-avant/npm-outdated-avant.png)
+
+**📸 `npm test` (avant) — 111/111 verts :**
+
+![tests avant 1/3](captures/02-avant/tests-verts-avant-1.png)
+![tests avant 2/3](captures/02-avant/tests-verts-avant-2.png)
+![tests avant 3/3 (résumé 111 passed)](captures/02-avant/tests-verts-avant-3.png)
 
 ---
 
@@ -75,9 +86,9 @@ docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
 
 | Chantier | Détail | « Fait » = quand… |
 |---|---|---|
-| **C1 — Mise à jour** | Faille : `@nestjs/core` 11.1.6 → 11.1.27 (high, injection path-to-regexp) **+** Majeure : `jest` 29 → 30 (+`@types/jest`, `ts-jest`). **Rollback** : `git revert` + restore `package-lock.json` + `npm ci`. | Vulns réduites, Jest 30 en place, suite verte, gain quantifié documenté |
-| **C2 — Correctif** | Bug : `<bug confirmé par repro>` — fichier(s) : `src/modules/messages/messages.service.ts` (`listThreads`) *ou* `src/modules/users/users.service.ts` (`getBlockedProfileIds`) | Reproduit, cause racine identifiée, corrigé, test de non-régression vert |
-| **C3 — Évolutif** | Feature : évolution « liste de mes bloqués » (pagination + date de blocage + recherche) — `users.service.ts` (`listBlockedUsers`), `users.controller.ts` | Implémentée, testée, intégrée proprement |
+| **C1 — Mise à jour** | Faille : `@nestjs/core` 11.1.6 → 11.1.27 (high, injection path-to-regexp) **+** 2 majeures : `jest` 29 → 30 (+`@types/jest`, `ts-jest`) et `uuid` 13 → 14. **Rollback** : `git revert` + restore `package-lock.json` + `npm ci`. | Vulns réduites (38→20), majeures en place, suite verte, gain quantifié |
+| **C2 — Correctif** | Bug : un profil **bloqué réapparaît dans les threads** car `swipe()` reformait un match sans vérifier le blocage — `src/modules/discovery/discovery.service.ts` (`swipe`/`ensureMatch`) | Reproduit (test rouge), cause racine identifiée, corrigé, test de non-régression vert |
+| **C3 — Évolutif** | Feature : évolution « liste de mes bloqués » (`blocked_at` + tri par plus récent + recherche `?search=`) — `users.service.ts` (`listBlockedUsers`), `users.controller.ts` | Implémentée, testée, intégrée proprement |
 
 > Rappel énoncé : pas d'upgrade purement cosmétique, pas de réécriture complète.
 
@@ -140,10 +151,25 @@ cp package-lock.json.bak package-lock.json && npm ci
 ```
 
 ### 4.5 Preuves
-📸 `captures/04-c1/diff-avant-apres.png` · `captures/04-c1/changelog-jest30.png` · `captures/04-c1/tests-verts-c1.png`
+
+**📸 Diff des dépendances montées (avant → après) :**
+
+![diff package.json deps](captures/04-c1/diff-avant-apres.png)
+
+**📸 Extrait du guide de migration Jest 30 (breaking changes) :**
+
+![guide officiel upgrading-to-jest30](captures/04-c1/changelog-jest30.png)
+
+**📸 Tests au vert après upgrade :**
+
+![tests C1 1/2](captures/04-c1/tests-verts-c1-1.png)
+![tests C1 2/2 (résumé au vert)](captures/04-c1/tests-verts-c1-2.png)
+
+> Note : dans la capture du résumé, les lignes `ERROR … Unhandled exception / boom` sont des
+> **logs volontaires** du test du filtre d'exceptions (`all-exceptions.filter.spec.ts`), pas des échecs.
 
 ### 4.6 Qui a fait quoi
-`<nom>`
+Océane GLANEUX (développeuse).
 
 ---
 
@@ -168,10 +194,24 @@ cp package-lock.json.bak package-lock.json && npm ci
 - **Test de non-régression** : `DiscoveryService › does not (re)create a match between blocked
   profiles on swipe` (passe de rouge à vert). Suite : **112/112**.
 
-📸 `captures/05-c2/comportement-avant.png` · `captures/05-c2/comportement-apres.png` · `captures/05-c2/test-c2-vert.png` · `captures/05-c2/diff-c2.png`
+**📸 Comportement AVANT (test rouge — bug reproduit) :**
+
+![test rouge : match restauré malgré blocage](captures/05-c2/comportement-avant.png)
+
+**📸 Comportement APRÈS (test vert) :**
+
+![test vert après fix](captures/05-c2/comportement-apres.png)
+
+**📸 Suite discovery au vert :**
+
+![suite discovery verte](captures/05-c2/test-c2-vert.png)
+
+**📸 Diff du correctif :**
+
+![diff du fix swipe isBlocked](captures/05-c2/diff-c2.png)
 
 ### Qui a fait quoi
-`<nom>`
+Océane GLANEUX (développeuse).
 
 ---
 
@@ -187,10 +227,20 @@ cp package-lock.json.bak package-lock.json && npm ci
 - **Test** : `lists blocked profiles with a blocked_at date, most recent first` +
   `filters blocked profiles by search term (name or pseudo)`. Suite **114/114**.
 
-📸 `captures/06-c3/feature-demo.png` · `captures/06-c3/test-c3-vert.png` · `captures/06-c3/diff-c3.png`
+**📸 La fonctionnalité (Swagger `GET /user/blocks` — `blocked_at` + `search`) :**
+
+![endpoint blocks dans Swagger](captures/06-c3/feature-demo.png)
+
+**📸 Tests de la feature au vert :**
+
+![tests users verts](captures/06-c3/test-c3-vert.png)
+
+**📸 Diff de la feature :**
+
+![diff listBlockedUsers](captures/06-c3/diff-c3.png)
 
 ### Qui a fait quoi
-`<nom>`
+Océane GLANEUX (développeuse).
 
 ---
 
@@ -204,7 +254,20 @@ cp package-lock.json.bak package-lock.json && npm ci
 | Nb de tests | 111 | **114** (+3 : 1 régression C2, 2 feature C3) |
 | Comportement blocage | profil bloqué pouvait réapparaître (threads) | **corrigé** (garde `isBlocked` au swipe) |
 
-📸 `captures/07-apres/npm-audit-apres.png` · `captures/07-apres/historique-git.png` · `captures/07-apres/pr.png`
+**📸 `npm audit` (après) — 20 vulnérabilités (modérées only) :**
+
+![npm audit après 1/3](captures/07-apres/npm-audit-apres-1.png)
+![npm audit après 2/3](captures/07-apres/npm-audit-apres-2.png)
+![npm audit après 3/3 (résumé : 20 modérées)](captures/07-apres/npm-audit-apres-3.png)
+
+**📸 Historique Git (branche `tp/dev-legacy`, commits atomiques) :**
+
+![git log oneline](captures/07-apres/historique-git.png)
+
+**📸 La Pull Request (#11) :**
+
+![PR 1/2](captures/07-apres/pr-1.png)
+![PR 2/2](captures/07-apres/pr-2.png)
 
 ---
 
