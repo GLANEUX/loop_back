@@ -12,8 +12,8 @@
 - **Équipe & rôles** :
   - `<Nom 1>` — `<rôle / chantiers>`
   - `<Nom 2>` — `<rôle / chantiers>`
-- **Lien du dépôt** : `<url repo>`
-- **Lien de la PR** (accès lecture `@celianlb`) : `<url PR>`
+- **Lien du dépôt** : https://github.com/GLANEUX/loop_back
+- **Lien de la PR** (accès lecture `@celianlb`) : https://github.com/GLANEUX/loop_back/pull/11
 - **Date de la mission** : 2026-06-16
 
 > *(Groupe)* Qui a fait quoi — voir aussi le détail en fin de chaque chantier.
