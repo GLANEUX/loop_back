@@ -59,7 +59,7 @@ docker logs -f loop_api_dev   # attendre "🚀 API running on port 3001"
 | Dépendances obsolètes (`npm outdated`) | ~32 packages, 9 majeures disponibles |
 | Build / lint OK ? | Build ✅ OK (après correctif `dist/`) · Lint ✅ 0 erreur, 2 warnings prettier |
 | Nb de tests / couverture | **111 tests** (19 suites) — verts après correctif fixtures — couverture **72,8 %** lignes (53,97 % branches) |
-| (Back) temps de réponse clé | *(optionnel — non mesuré)* |
+| (Back) temps de réponse clé | `GET /health` : **~5 ms** (médiane sur 5 appels, app dockerisée) |
 
 **📸 `npm audit` (avant) — 38 vulnérabilités :**
 
