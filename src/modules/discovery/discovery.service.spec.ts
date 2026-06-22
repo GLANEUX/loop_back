@@ -29,6 +29,7 @@ describe("DiscoveryService", () => {
           useValue: {
             getProfileForUser: jest.fn(),
             getBlockedProfileIds: jest.fn(),
+            isBlocked: jest.fn(),
           },
         },
         {
@@ -236,6 +237,50 @@ describe("DiscoveryService", () => {
       lastDeliveredMessageIdByA: null,
       lastDeliveredMessageIdByB: null,
     });
+  });
+
+  it("does not (re)create a match between blocked profiles on swipe", async () => {
+    // Regression: a blocked user could re-form a match via a direct swipe,
+    // making the blocked profile reappear in threads/messages.
+    usersService.getProfileForUser.mockResolvedValueOnce({ id: "profile-1" } as Profile);
+    profileRepo.findOne.mockResolvedValueOnce({
+      id: "profile-2",
+      isPublic: true,
+      user: { role: UserRole.User },
+    } as Profile);
+
+    swipeRepo.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "swipe-2", isLike: true } as Swipe);
+    swipeRepo.create.mockReturnValueOnce({
+      id: "swipe-1",
+      fromProfileId: "profile-1",
+      toProfileId: "profile-2",
+      isLike: true,
+      createdAt: new Date(),
+    } as Swipe);
+    swipeRepo.save.mockResolvedValueOnce({
+      id: "swipe-1",
+      isLike: true,
+      createdAt: new Date(),
+    } as Swipe);
+
+    // A soft-deleted match exists (broken by the block) and would be restored.
+    matchRepo.findOne.mockResolvedValueOnce({
+      id: "match-1",
+      profileAId: "profile-1",
+      profileBId: "profile-2",
+      deletedAt: new Date(),
+    } as Match);
+
+    // The two profiles are blocked.
+    usersService.isBlocked.mockResolvedValueOnce(true);
+
+    const result = await service.swipe("user-1", "profile-2", true);
+
+    expect(result.matchCreated).toBe(false);
+    expect(result.matchId).toBeUndefined();
+    expect(matchRepo.restore).not.toHaveBeenCalled();
   });
 
   it("updates swipe to pass and removes existing match", async () => {

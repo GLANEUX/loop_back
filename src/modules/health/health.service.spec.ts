@@ -8,7 +8,7 @@ import { HealthService } from "./health.service";
 describe("HealthService", () => {
   let service: HealthService;
   let repo: jest.Mocked<Repository<HealthCheck>>;
-  let loggerErrorSpy: jest.SpyInstance;
+  let loggerErrorSpy: jest.Spied<typeof Logger.prototype.error>;
 
   const qb: {
     orderBy: jest.Mock;
