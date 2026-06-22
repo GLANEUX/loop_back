@@ -48,5 +48,5 @@
   Fichiers : users.service.ts, users.controller.ts (+ `@Query`). 2 tests ajoutés. Suite 114/114.
 
 ### Clôture
-- `16hXX` — `npm audit` après : `<X>` vulns. Tableau « Après » rempli.
-- `16hXX` — PR ouverte, accès lecture `@celianlb`.
+- `16hXX` — `npm audit` après : **20** vulns (modérées). Tableau « Après » rempli.
+- `16hXX` — PR #11 ouverte, `@celianlb` ajouté en reviewer (accès lecture).
